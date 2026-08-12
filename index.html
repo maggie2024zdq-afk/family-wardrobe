@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5F6F8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="家庭衣橱">
+  <title>家庭衣橱</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- 顶部栏 -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button class="title-pill" id="topTitlePill" aria-label="切换账号">
+        <span class="topbar-title" id="topTitle">我的衣橱</span>
+        <span class="chev">▾</span>
+      </button>
+      <button class="account-pill" id="accountPill" aria-label="切换账号">
+        <span class="avatar" id="accountAvatar">家</span>
+        <span class="account-name" id="accountName">未选择</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- 首页 -->
+    <section class="screen" id="screen-home">
+      <div class="home-welcome">
+        <h1>我的衣橱</h1>
+        <p class="muted">管理全家衣物，轻松搭配每一天</p>
+      </div>
+      <div class="home-quick">
+        <button class="home-card" data-go="closet">👕 查看单品</button>
+        <button class="home-card" data-go="outfits">🧥 我的搭配</button>
+        <button class="home-card" data-go="stats">📅 穿搭日历</button>
+        <button class="home-card" data-go="me">👤 家庭成员</button>
+      </div>
+    </section>
+
+    <!-- 衣橱 / 单品 -->
+    <section class="screen active" id="screen-closet">
+      <div class="season-bar" id="seasonBar"></div>
+      <div class="closet-body">
+        <aside class="cat-sidebar">
+          <div class="sidebar-list" id="catSidebar"></div>
+          <div class="sidebar-actions">
+            <button class="sidebar-act" id="batchImportBtn">批量导入</button>
+            <button class="sidebar-act" id="addCategoryBtn">＋ 分类</button>
+          </div>
+        </aside>
+        <div class="closet-main">
+          <div class="main-toolbar">
+            <select class="sort-select" id="sortSelect">
+              <option value="newest">最新添加</option>
+              <option value="worn">最常穿着</option>
+              <option value="name">名称排序</option>
+            </select>
+            <div class="toolbar-right">
+              <button class="tool-btn" id="filterBtn">筛选</button>
+              <button class="tool-btn" id="editGridBtn">编辑</button>
+            </div>
+          </div>
+          <div class="sub-tags" id="subTags"></div>
+          <div class="item-grid" id="itemGrid"></div>
+          <div class="empty-state" id="closetEmpty" hidden>暂无衣物数据</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 搭配 / 穿搭 -->
+    <section class="screen" id="screen-outfits">
+      <div class="section-head">
+        <h2>我的搭配</h2>
+        <button class="btn-ghost" id="addOutfitBtn">＋ 新建搭配</button>
+      </div>
+      <div class="outfit-list" id="outfitList"></div>
+      <div class="empty-state" id="outfitEmpty" hidden>还没有搭配，去衣橱挑几件组合一下</div>
+    </section>
+
+    <!-- 日历 / 统计 -->
+    <section class="screen" id="screen-stats">
+      <div id="statsContent"></div>
+    </section>
+
+    <!-- 我的 -->
+    <section class="screen" id="screen-me">
+      <div id="meContent"></div>
+    </section>
+  </main>
+
+  <!-- 悬浮添加按钮 -->
+  <button class="fab" id="addItemFab" aria-label="添加衣物">＋</button>
+
+  <!-- 底部导航 -->
+  <nav class="bottomnav">
+    <button class="nav-btn" data-screen="home">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </button>
+    <button class="nav-btn active" data-screen="closet">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M12 8v2"/><path d="M12 10 4 15h16z"/><path d="M4 15c2 1.5 5 2.5 8 2.5s6-1 8-2.5"/></svg>
+      <span>衣橱</span>
+    </button>
+    <button class="nav-btn" data-screen="outfits">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 14H3.6a.6.6 0 0 1-.6-.6V4.6A.6.6 0 0 1 3.6 4h16.8a.6.6 0 0 1 .6.6v8.8a.6.6 0 0 1-.6.6Z"/><path d="M16 20l-4-4-4 4"/><path d="M12 16v6"/></svg>
+      <span>穿搭</span>
+    </button>
+    <button class="nav-btn" data-screen="stats">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>日历</span>
+    </button>
+    <button class="nav-btn" data-screen="me">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </button>
+  </nav>
+</div>
+
+<!-- 通用弹窗容器 -->
+<div class="modal-backdrop" id="modalRoot" hidden></div>
+<!-- 轻提示 -->
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
