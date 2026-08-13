@@ -35,6 +35,9 @@ function sizeOptionsHtml(cat, selected) {
   const sel = selected && opts.includes(selected) ? selected : '不填';
   return opts.map((s) => `<option value="${s}" ${sel === s ? 'selected' : ''}>${s}</option>`).join('');
 }
+// 存储位置预设（datalist 候选，也可自由填写）
+const LOCATION_LIST = ['衣帽间', '主卧衣柜', '次卧衣柜', '儿童房衣柜', '玄关鞋柜', '客厅收纳柜', '阳台收纳区', '收纳箱', '旅行箱'];
+const locOptionsHtml = LOCATION_LIST.map((l) => `<option value="${l}"></option>`).join('');
 const CAT_ICON = { '全部': '📋', '上装': '👕', '下装': '👖', '鞋子': '👟', '包包': '👜', '配饰': '🕶️' };
 const SUB_ICON = {
   'T恤': '👕', '卫衣': '🧥', '衬衫': '👔', '毛衣': '🧶', '夹克': '🧥', '大衣': '🧥', '羽绒服': '🧥',
@@ -187,7 +190,7 @@ function renderItemGrid() {
         <div class="item-thumb">${it.image ? `<img src="${it.image}" alt="${esc(it.name)}">` : `<span class="no-img">👕</span>`}</div>
         <div class="item-meta">
           <div class="item-name">${esc(it.name || '未命名')}</div>
-          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}</div>
+          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}</div>
           <div class="item-seasons">${(it.seasons || []).map((s) => `<span class="sbadge" style="background:${SEASON_COLOR[s]}">${SEASON_LABEL[s]}</span>`).join('')}</div>
         </div>
       </div>`).join('');
@@ -349,6 +352,8 @@ function openItemEditor(item, defaultCategory) {
     <label class="field"><span>二级分类</span><select id="fSubCategory">${subCategoryOptions(cat, it.subCategory)}</select></label>
     <label class="field"><span>颜色</span><input type="text" id="fColor" placeholder="如：白色" value="${esc(it.color || '')}"></label>
     <label class="field"><span>尺码</span><select id="fSize">${sizeOptionsHtml(cat, it.size)}</select></label>
+    <label class="field"><span>存储位置</span><input type="text" id="fLocation" list="locList" placeholder="如：主卧衣柜上层" value="${esc(it.location || '')}"></label>
+    <datalist id="locList">${locOptionsHtml}</datalist>
     <div class="field"><span>季节（可多选）</span><div class="season-pick" id="seasonPick">
       ${SEASONS.map((s) => `<label class="spick"><input type="checkbox" value="${s.key}" ${(it.seasons || []).includes(s.key) ? 'checked' : ''}><span style="background:${s.color}">${s.label}</span></label>`).join('')}
     </div></div>
@@ -393,6 +398,7 @@ async function saveItem(original) {
     subCategory: $('#fSubCategory').value,
     color: $('#fColor').value.trim(),
     size: $('#fSize').value,
+    location: $('#fLocation').value.trim(),
     seasons,
     brand: $('#fBrand').value.trim(),
     price: $('#fPrice').value ? Number($('#fPrice').value) : null,
@@ -530,6 +536,8 @@ async function openBatchImportModal() {
       <label class="field"><span>默认分类</span><select id="batchCat">${state.categories.map((c) => `<option value="${c}">${c}</option>`).join('')}</select></label>
       <label class="field"><span>默认二级分类</span><select id="batchSubCat"><option value="">不设置</option></select></label>
       <label class="field"><span>默认尺码</span><select id="batchSize">${sizeOptionsHtml(state.categories[0] || '上装', '不填')}</select></label>
+      <label class="field"><span>默认存储位置</span><input type="text" id="batchLoc" list="batchLocList" placeholder="如：主卧衣柜"></label>
+      <datalist id="batchLocList">${locOptionsHtml}</datalist>
       <button class="btn-sm" id="batchApplyAll">应用到全部</button>
     </div>
     <p class="batch-summary" id="batchSummary">尚未选择图片</p>
@@ -570,6 +578,7 @@ async function openBatchImportModal() {
         <select data-i="${i}" data-field="cat">${state.categories.map((c) => `<option value="${c}" ${b.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
         <select data-i="${i}" data-field="sub"><option value="">二级分类</option>${subCategoryOptions(b.category, b.subCategory)}</select>
         <select data-i="${i}" data-field="size">${sizeOptionsHtml(b.category, b.size)}</select>
+        <input type="text" data-i="${i}" data-field="location" list="batchLocList" placeholder="位置" value="${esc(b.location || '')}">
       </div>`).join('');
     $$('#batchGrid select[data-field="cat"]').forEach((sel) => sel.addEventListener('change', (e) => {
       const idx = Number(e.target.dataset.i);
@@ -586,6 +595,9 @@ async function openBatchImportModal() {
     $$('#batchGrid select[data-field="size"]').forEach((sel) => sel.addEventListener('change', (e) => {
       state._batch[Number(e.target.dataset.i)].size = e.target.value;
     }));
+    $$('#batchGrid input[data-field="location"]').forEach((sel) => sel.addEventListener('input', (e) => {
+      state._batch[Number(e.target.dataset.i)].location = e.target.value.trim();
+    }));
   }
   $('#batchInput').addEventListener('change', async (e) => {
     const files = [...e.target.files];
@@ -593,8 +605,9 @@ async function openBatchImportModal() {
     const def = $('#batchCat').value;
     const defSub = $('#batchSubCat').value;
     const defSize = $('#batchSize').value;
+    const defLoc = $('#batchLoc').value.trim();
     for (const f of files) {
-      try { const d = await compressImage(f); state._batch.push({ file: f, dataUrl: d, category: def, subCategory: defSub, size: defSize }); } catch (_) {}
+      try { const d = await compressImage(f); state._batch.push({ file: f, dataUrl: d, category: def, subCategory: defSub, size: defSize, location: defLoc }); } catch (_) {}
     }
     renderGrid();
   });
@@ -602,7 +615,8 @@ async function openBatchImportModal() {
     const def = $('#batchCat').value;
     const defSub = $('#batchSubCat').value;
     const defSize = $('#batchSize').value;
-    state._batch.forEach((b) => { b.category = def; b.subCategory = defSub; b.size = defSize; });
+    const defLoc = $('#batchLoc').value.trim();
+    state._batch.forEach((b) => { b.category = def; b.subCategory = defSub; b.size = defSize; b.location = defLoc; });
     renderGrid();
     toast('已应用默认分类');
   });
@@ -618,6 +632,7 @@ async function openBatchImportModal() {
         category: b.category,
         subCategory: b.subCategory || '',
         size: b.size || '不填',
+        location: b.location || '',
         color: '', seasons,
         brand: '', price: null, note: '', image: b.dataUrl, wornCount: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
