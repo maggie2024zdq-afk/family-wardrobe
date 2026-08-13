@@ -1,6 +1,6 @@
 // sw.js — 离线缓存
 // 策略：联网时 network-first（始终拿最新，便于开发期即时生效），离线时回退本地缓存。
-const CACHE = 'wardrobe-v2';
+const CACHE = 'wardrobe-v3';
 const ASSETS = [
   './',
   './index.html',

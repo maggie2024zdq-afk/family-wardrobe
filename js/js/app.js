@@ -20,7 +20,21 @@ const SEASONS = [
 ];
 const SEASON_LABEL = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
 const SEASON_COLOR = { spring: '#8BC48A', summer: '#F4A261', autumn: '#D4A373', winter: '#7EB5D6' };
-const SIZES = ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+// 尺码按一级分类智能切换（鞋子显示鞋码、上装/下装显示服装码、包包/配饰显示通用规格）
+const SIZE_OPTIONS = {
+  '鞋子': ['不填', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'],
+  '上装': ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+  '下装': ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+  '包包': ['不填', '均码', '小号', '中号', '大号'],
+  '配饰': ['不填', '均码', '可调节'],
+};
+const SIZE_FALLBACK = ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const sizeOptionsFor = (cat) => SIZE_OPTIONS[cat] || SIZE_FALLBACK;
+function sizeOptionsHtml(cat, selected) {
+  const opts = sizeOptionsFor(cat);
+  const sel = selected && opts.includes(selected) ? selected : '不填';
+  return opts.map((s) => `<option value="${s}" ${sel === s ? 'selected' : ''}>${s}</option>`).join('');
+}
 const CAT_ICON = { '全部': '📋', '上装': '👕', '下装': '👖', '鞋子': '👟', '包包': '👜', '配饰': '🕶️' };
 const SUB_ICON = {
   'T恤': '👕', '卫衣': '🧥', '衬衫': '👔', '毛衣': '🧶', '夹克': '🧥', '大衣': '🧥', '羽绒服': '🧥',
@@ -334,7 +348,7 @@ function openItemEditor(item, defaultCategory) {
     <label class="field"><span>一级分类</span><select id="fCategory">${state.categories.map((c) => `<option value="${c}" ${cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
     <label class="field"><span>二级分类</span><select id="fSubCategory">${subCategoryOptions(cat, it.subCategory)}</select></label>
     <label class="field"><span>颜色</span><input type="text" id="fColor" placeholder="如：白色" value="${esc(it.color || '')}"></label>
-    <label class="field"><span>尺码</span><select id="fSize">${SIZES.map((s) => `<option value="${s}" ${(it.size || '不填') === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+    <label class="field"><span>尺码</span><select id="fSize">${sizeOptionsHtml(cat, it.size)}</select></label>
     <div class="field"><span>季节（可多选）</span><div class="season-pick" id="seasonPick">
       ${SEASONS.map((s) => `<label class="spick"><input type="checkbox" value="${s.key}" ${(it.seasons || []).includes(s.key) ? 'checked' : ''}><span style="background:${s.color}">${s.label}</span></label>`).join('')}
     </div></div>
@@ -360,6 +374,8 @@ function openItemEditor(item, defaultCategory) {
   });
   $('#fCategory').addEventListener('change', (e) => {
     $('#fSubCategory').innerHTML = subCategoryOptions(e.target.value, '');
+    const cur = $('#fSize').value;
+    $('#fSize').innerHTML = sizeOptionsHtml(e.target.value, sizeOptionsFor(e.target.value).includes(cur) ? cur : '不填');
   });
   if (item) $('#deleteItemBtn').addEventListener('click', () => confirmDeleteItem(item.id));
   $('#saveItemBtn').addEventListener('click', () => saveItem(item));
@@ -513,7 +529,7 @@ async function openBatchImportModal() {
     <div class="batch-default">
       <label class="field"><span>默认分类</span><select id="batchCat">${state.categories.map((c) => `<option value="${c}">${c}</option>`).join('')}</select></label>
       <label class="field"><span>默认二级分类</span><select id="batchSubCat"><option value="">不设置</option></select></label>
-      <label class="field"><span>默认尺码</span><select id="batchSize">${SIZES.map((s) => `<option value="${s}">${s}</option>`).join('')}</select></label>
+      <label class="field"><span>默认尺码</span><select id="batchSize">${sizeOptionsHtml(state.categories[0] || '上装', '不填')}</select></label>
       <button class="btn-sm" id="batchApplyAll">应用到全部</button>
     </div>
     <p class="batch-summary" id="batchSummary">尚未选择图片</p>
@@ -531,6 +547,11 @@ async function openBatchImportModal() {
   updateBatchSubCat();
   $('#batchCat').addEventListener('change', () => {
     updateBatchSubCat();
+    const defSize = $('#batchSize');
+    if (defSize) {
+      const cur = defSize.value;
+      defSize.innerHTML = sizeOptionsHtml($('#batchCat').value, sizeOptionsFor($('#batchCat').value).includes(cur) ? cur : '不填');
+    }
     $$('#batchGrid select[data-field="cat"]').forEach((sel) => {
       sel.innerHTML = state.categories.map((c) => `<option value="${c}" ${sel.value === c ? 'selected' : ''}>${c}</option>`).join('');
     });
@@ -548,7 +569,7 @@ async function openBatchImportModal() {
         <div class="batch-thumb"><img src="${b.dataUrl}" alt=""></div>
         <select data-i="${i}" data-field="cat">${state.categories.map((c) => `<option value="${c}" ${b.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
         <select data-i="${i}" data-field="sub"><option value="">二级分类</option>${subCategoryOptions(b.category, b.subCategory)}</select>
-        <select data-i="${i}" data-field="size">${SIZES.map((s) => `<option value="${s}" ${b.size === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+        <select data-i="${i}" data-field="size">${sizeOptionsHtml(b.category, b.size)}</select>
       </div>`).join('');
     $$('#batchGrid select[data-field="cat"]').forEach((sel) => sel.addEventListener('change', (e) => {
       const idx = Number(e.target.dataset.i);
@@ -556,6 +577,8 @@ async function openBatchImportModal() {
       const subSel = e.target.parentElement.querySelector('select[data-field="sub"]');
       subSel.innerHTML = '<option value="">二级分类</option>' + subCategoryOptions(e.target.value, '');
       state._batch[idx].subCategory = '';
+      const sizeSel = e.target.parentElement.querySelector('select[data-field="size"]');
+      if (sizeSel) { sizeSel.innerHTML = sizeOptionsHtml(e.target.value, '不填'); state._batch[idx].size = '不填'; }
     }));
     $$('#batchGrid select[data-field="sub"]').forEach((sel) => sel.addEventListener('change', (e) => {
       state._batch[Number(e.target.dataset.i)].subCategory = e.target.value;
