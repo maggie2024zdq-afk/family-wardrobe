@@ -36,6 +36,7 @@
         <h1>我的衣橱</h1>
         <p class="muted">管理全家衣物，轻松搭配每一天</p>
       </div>
+      <div id="weatherCard" class="weather-card"><p class="muted small">正在获取天气…</p></div>
       <div class="home-quick">
         <button class="home-card" data-go="closet">👕 查看单品</button>
         <button class="home-card" data-go="outfits">🧥 我的搭配</button>
@@ -64,8 +65,13 @@
             </select>
             <div class="toolbar-right">
               <button class="tool-btn" id="filterBtn">筛选</button>
-              <button class="tool-btn" id="editGridBtn">编辑</button>
+              <button class="tool-btn" id="editGridBtn">多选</button>
             </div>
+          </div>
+          <div class="batch-bar" id="batchBar" hidden>
+            <span id="batchCount">已选 0 件</span>
+            <button class="btn-text danger" id="batchDeleteSel">删除选中</button>
+            <button class="btn-text" id="batchCancelSel">取消</button>
           </div>
           <div class="sub-tags" id="subTags"></div>
           <div class="item-grid" id="itemGrid"></div>

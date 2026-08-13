@@ -38,6 +38,9 @@ function sizeOptionsHtml(cat, selected) {
 // 存储位置预设（datalist 候选，也可自由填写）
 const LOCATION_LIST = ['衣帽间', '主卧衣柜', '次卧衣柜', '儿童房衣柜', '玄关鞋柜', '客厅收纳柜', '阳台收纳区', '收纳箱', '旅行箱'];
 const locOptionsHtml = LOCATION_LIST.map((l) => `<option value="${l}"></option>`).join('');
+// 材质/面料预设
+const MATERIAL_LIST = ['棉', '麻', '真丝', '羊毛', '涤纶', '混纺', '牛仔', '针织', '其他'];
+const materialOptionsHtml = (sel) => ['<option value="">不填</option>'].concat(MATERIAL_LIST.map((m) => `<option value="${m}" ${sel === m ? 'selected' : ''}>${m}</option>`)).join('');
 const CAT_ICON = { '全部': '📋', '上装': '👕', '下装': '👖', '鞋子': '👟', '包包': '👜', '配饰': '🕶️' };
 const SUB_ICON = {
   'T恤': '👕', '卫衣': '🧥', '衬衫': '👔', '毛衣': '🧶', '夹克': '🧥', '大衣': '🧥', '羽绒服': '🧥',
@@ -60,8 +63,17 @@ const state = {
   subCategoryFilter: 'all',
   sort: 'newest',
   search: '',
+  locationFilter: 'all',
+  colorFilter: 'all',
+  brandFilter: 'all',
+  sizeFilter: 'all',
+  idleFilter: 'all',
   screen: 'closet',
   _img: null,
+  trash: [],
+  wearLog: [],
+  multiSelect: false,
+  selectedIds: new Set(),
 };
 
 /* ===================== 工具 ===================== */
@@ -104,9 +116,11 @@ function compressImage(file, maxDim = 900, quality = 0.72) {
 
 /* ===================== 数据加载 ===================== */
 async function loadData() {
-  state.items = (await WardrobeDB.getItemsByAccount(state.currentAccountId)) || [];
+  const all = (await WardrobeDB.getItemsByAccount(state.currentAccountId)) || [];
+  state.items = all.filter((it) => !it.deletedAt).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  state.trash = all.filter((it) => it.deletedAt).sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
   state.outfits = (await WardrobeDB.getOutfitsByAccount(state.currentAccountId)) || [];
-  state.items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  state.wearLog = (await WardrobeDB.getWearLogByAccount(state.currentAccountId)) || [];
   const acc = currentAccount();
   const base = acc && acc.categories && acc.categories.length ? acc.categories : [...CATEGORIES];
   // 把旧数据里实际存在的分类也纳入侧边栏，避免丢失
@@ -120,9 +134,15 @@ function getFilteredItems() {
     if (state.seasonFilter !== 'all' && !(it.seasons || []).includes(state.seasonFilter)) return false;
     if (state.categoryFilter !== 'all' && it.category !== state.categoryFilter) return false;
     if (state.subCategoryFilter !== 'all' && it.subCategory !== state.subCategoryFilter) return false;
+    if (state.locationFilter !== 'all' && (it.location || '') !== state.locationFilter) return false;
+    if (state.colorFilter !== 'all' && (it.color || '') !== state.colorFilter) return false;
+    if (state.brandFilter !== 'all' && (it.brand || '') !== state.brandFilter) return false;
+    if (state.sizeFilter !== 'all' && (it.size || '不填') !== state.sizeFilter) return false;
+    if (state.idleFilter === 'never' && (it.wornCount || 0) !== 0) return false;
+    if (state.idleFilter === 'rarely' && (it.wornCount || 0) > 2) return false;
     if (state.search) {
       const q = state.search.toLowerCase();
-      const hay = [it.name, it.category, it.subCategory, it.color, it.brand, it.note].filter(Boolean).join(' ').toLowerCase();
+      const hay = [it.name, it.category, it.subCategory, it.color, it.brand, it.note, (it.tags || []).join(' ')].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -186,11 +206,11 @@ function renderItemGrid() {
   } else {
     empty.hidden = true;
     grid.innerHTML = items.map((it) => `
-      <div class="item-card" data-id="${it.id}">
+      <div class="item-card ${state.multiSelect ? 'selectable' : ''} ${state.selectedIds.has(it.id) ? 'selected' : ''}" data-id="${it.id}">
         <div class="item-thumb">${it.image ? `<img src="${it.image}" alt="${esc(it.name)}">` : `<span class="no-img">👕</span>`}</div>
         <div class="item-meta">
           <div class="item-name">${esc(it.name || '未命名')}</div>
-          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}</div>
+          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}${it.material ? (' · ' + esc(it.material)) : ''}${it.washStatus && it.washStatus !== '正常' ? (' · 🧺' + esc(it.washStatus)) : ''}${(it.tags && it.tags.length) ? (' · 🏷' + esc(it.tags.join('/'))) : ''}${it.buyDate ? (' · 衣龄' + (new Date().getFullYear() - new Date(it.buyDate).getFullYear()) + '年') : ''}</div>
           <div class="item-seasons">${(it.seasons || []).map((s) => `<span class="sbadge" style="background:${SEASON_COLOR[s]}">${SEASON_LABEL[s]}</span>`).join('')}</div>
         </div>
       </div>`).join('');
@@ -202,11 +222,104 @@ function renderCloset() {
   renderSidebar();
   renderSubTags();
   renderItemGrid();
+  const fActive = state.search || state.locationFilter !== 'all' || state.colorFilter !== 'all' || state.brandFilter !== 'all' || state.sizeFilter !== 'all' || state.idleFilter !== 'all';
+  const fb = $('#filterBtn');
+  if (fb) fb.classList.toggle('active', !!fActive);
+  const eb = $('#editGridBtn');
+  if (eb) eb.textContent = state.multiSelect ? '完成' : '多选';
+  const bar = $('#batchBar');
+  if (bar) {
+    bar.hidden = !state.multiSelect;
+    $('#batchCount').textContent = '已选 ' + state.selectedIds.size + ' 件';
+  }
+}
+
+function uniqueValues(key) {
+  const set = new Set();
+  state.items.forEach((it) => { const v = it[key]; if (v && v !== '不填') set.add(v); });
+  return [...set].sort();
+}
+function optionList(values, selected, allLabel) {
+  return `<option value="all">${allLabel}</option>` + values.map((v) => `<option value="${esc(v)}" ${selected === v ? 'selected' : ''}>${esc(v)}</option>`).join('');
+}
+function openFilterModal() {
+  const body = `
+    <label class="field"><span>关键词</span><input type="text" id="fSearch" placeholder="名称 / 备注" value="${esc(state.search)}"></label>
+    <label class="field"><span>存储位置</span><select id="fLoc">${optionList(uniqueValues('location'), state.locationFilter, '全部位置')}</select></label>
+    <label class="field"><span>颜色</span><select id="fColorF">${optionList(uniqueValues('color'), state.colorFilter, '全部颜色')}</select></label>
+    <label class="field"><span>品牌</span><select id="fBrandF">${optionList(uniqueValues('brand'), state.brandFilter, '全部品牌')}</select></label>
+    <label class="field"><span>尺码</span><select id="fSizeF">${optionList(uniqueValues('size'), state.sizeFilter, '全部尺码')}</select></label>
+    <label class="field"><span>闲置程度</span><select id="fIdle">
+      <option value="all">全部</option>
+      <option value="never" ${state.idleFilter === 'never' ? 'selected' : ''}>从未穿过</option>
+      <option value="rarely" ${state.idleFilter === 'rarely' ? 'selected' : ''}>很少穿(≤2次)</option>
+    </select></label>`;
+  const foot = `<button class="btn-text" id="filterReset">重置</button><button class="btn-primary" id="filterApply">应用</button>`;
+  openModal({ title: '筛选', body, foot });
+  $('#filterApply').addEventListener('click', () => {
+    state.search = $('#fSearch').value.trim();
+    state.locationFilter = $('#fLoc').value;
+    state.colorFilter = $('#fColorF').value;
+    state.brandFilter = $('#fBrandF').value;
+    state.sizeFilter = $('#fSizeF').value;
+    state.idleFilter = $('#fIdle').value;
+    closeModal();
+    renderCloset();
+  });
+  $('#filterReset').addEventListener('click', () => {
+    state.search = ''; state.locationFilter = 'all'; state.colorFilter = 'all';
+    state.brandFilter = 'all'; state.sizeFilter = 'all'; state.idleFilter = 'all';
+    closeModal(); renderCloset();
+  });
 }
 
 /* ===================== 渲染：首页 ===================== */
 function renderHome() {
-  // 首页静态内容已在 HTML，无需额外渲染
+  renderWeather();
+}
+const WMO_DESC = {
+  0: '晴', 1: '大致晴朗', 2: '局部多云', 3: '阴',
+  45: '雾', 48: '雾凇', 51: '小毛毛雨', 53: '毛毛雨', 55: '大毛毛雨',
+  61: '小雨', 63: '中雨', 65: '大雨', 66: '冻雨', 67: '强冻雨',
+  71: '小雪', 73: '中雪', 75: '大雪', 77: '雪粒',
+  80: '阵雨', 81: '强阵雨', 82: '暴雨', 85: '阵雪', 86: '强阵雪',
+  95: '雷阵雨', 96: '雷阵雨伴冰雹', 99: '强雷暴冰雹',
+};
+function weatherDesc(code) { return WMO_DESC[code] != null ? WMO_DESC[code] : '未知'; }
+function weatherTip(temp) {
+  if (temp >= 30) return '高温酷暑，穿短袖/裙子，注意防晒补水';
+  if (temp >= 25) return '炎热，短袖、薄衫最舒适';
+  if (temp >= 20) return '舒适温暖，单衣或薄外套即可';
+  if (temp >= 15) return '微凉，长袖或加件薄外套';
+  if (temp >= 10) return '偏凉，毛衣/卫衣+外套';
+  if (temp >= 0) return '寒冷，羽绒/厚外套+保暖内搭';
+  return '严寒，厚羽绒+围巾帽子全副武装';
+}
+function renderWeather() {
+  const box = $('#weatherCard');
+  if (!box) return;
+  const show = (temp, code, city) => {
+    const t = Math.round(temp);
+    box.innerHTML = `<div class="wx-main"><div class="wx-temp">${t}°</div><div class="wx-desc">${weatherDesc(code)}</div><div class="wx-city">${esc(city)}</div></div><div class="wx-tip">👕 ${weatherTip(t)}</div>`;
+  };
+  const fallback = () => {
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=39.9042&longitude=116.4074&current=temperature_2m,weather_code')
+      .then((r) => r.json())
+      .then((d) => show(d.current.temperature_2m, d.current.weather_code, '北京（默认）'))
+      .catch(() => { box.innerHTML = '<p class="muted small">天气获取失败，可稍后重试</p>'; });
+  };
+  if (!navigator.geolocation) { fallback(); return; }
+  let done = false;
+  const geoTimer = setTimeout(() => { if (!done) { done = true; fallback(); } }, 9000);
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    if (done) return; done = true; clearTimeout(geoTimer);
+    try {
+      const { latitude, longitude } = pos.coords;
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`);
+      const d = await r.json();
+      show(d.current.temperature_2m, d.current.weather_code, '当前位置');
+    } catch (e) { fallback(); }
+  }, () => { if (!done) { done = true; clearTimeout(geoTimer); fallback(); } }, { timeout: 9000 });
 }
 
 /* ===================== 渲染：搭配 / 穿搭 ===================== */
@@ -231,6 +344,76 @@ function renderOutfits() {
 }
 
 /* ===================== 渲染：日历 / 统计 ===================== */
+function currentSeasonKey() {
+  const m = new Date().getMonth() + 1;
+  if (m >= 3 && m <= 5) return 'spring';
+  if (m >= 6 && m <= 8) return 'summer';
+  if (m >= 9 && m <= 11) return 'autumn';
+  return 'winter';
+}
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function openPickToday() {
+  const season = currentSeasonKey();
+  let pool = state.items.filter((it) => (it.seasons || []).length === 0 || (it.seasons || []).includes(season));
+  if (pool.length < 3) pool = state.items;
+  const pickCat = (cat) => {
+    const arr = pool.filter((it) => it.category === cat);
+    return arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
+  };
+  const chosen = [pickCat('上装'), pickCat('下装'), pickCat('鞋子')].filter(Boolean);
+  const rest = pool.filter((it) => !chosen.includes(it));
+  while (chosen.length < 3 && rest.length) chosen.push(rest.splice(Math.floor(Math.random() * rest.length), 1)[0]);
+  const body = `
+    <p class="muted small">根据当前季节「${SEASON_LABEL[season]}」为你随机搭配：</p>
+    <div class="pick-grid">
+      ${chosen.map((it) => `<div class="pick-item on">${it.image ? `<img src="${it.image}" alt="">` : '<span>👕</span>'}<span class="pick-name">${esc(it.name || '未命名')}</span></div>`).join('')}
+    </div>
+    <button class="btn-primary full" id="recordTodayBtn">📅 记录今天穿了这些</button>`;
+  openModal({ title: '今天穿什么', body });
+  $('#recordTodayBtn').addEventListener('click', async () => {
+    const date = todayStr();
+    for (const c of chosen) { c.wornCount = (c.wornCount || 0) + 1; await WardrobeDB.putItem(c); }
+    let log = state.wearLog.find((w) => w.date === date);
+    const ids = chosen.map((c) => c.id);
+    if (log) log.itemIds = [...new Set([...log.itemIds, ...ids])];
+    else log = { id: uid(), accountId: state.currentAccountId, date, itemIds: ids, createdAt: Date.now() };
+    await WardrobeDB.putWearLog(log);
+    await loadData();
+    closeModal(); renderCloset(); renderStats();
+    toast('已记录今天穿搭');
+  });
+}
+function showDayWear(w) {
+  const items = (w.itemIds || []).map((id) => state.items.find((x) => x.id === id)).filter(Boolean);
+  const body = `<p class="muted small">${w.date}</p><div class="pick-grid">${
+    items.length ? items.map((it) => `<div class="pick-item on">${it.image ? `<img src="${it.image}" alt="">` : '<span>👕</span>'}<span class="pick-name">${esc(it.name || '未命名')}</span></div>`).join('') : '<p>当天无衣物记录</p>'
+  }</div>`;
+  openModal({ title: '当天穿搭', body });
+}
+function renderWearCalendar(container) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  const logsByDay = {};
+  state.wearLog.forEach((w) => {
+    const parts = w.date.split('-').map(Number);
+    if (parts[0] === y && parts[1] - 1 === m) logsByDay[parts[2]] = w;
+  });
+  let cells = '';
+  for (let i = 0; i < first; i++) cells += '<div class="cal-cell empty"></div>';
+  for (let d = 1; d <= days; d++) {
+    const w = logsByDay[d];
+    cells += `<div class="cal-cell ${w ? 'has-log' : ''}" data-day="${d}">${d}${w ? '<span class="cal-dot"></span>' : ''}</div>`;
+  }
+  container.innerHTML = cells;
+  container.querySelectorAll('.cal-cell.has-log').forEach((c) => c.addEventListener('click', () => {
+    const w = logsByDay[Number(c.dataset.day)];
+    if (w) showDayWear(w);
+  }));
+}
+
 function renderStats() {
   const items = state.items;
   const total = items.length;
@@ -256,6 +439,16 @@ function renderStats() {
     : '<p class="muted">暂无穿着记录</p>';
 
   $('#statsContent').innerHTML = `
+    <div class="stat-block">
+      <h3>今天穿什么</h3>
+      <button class="btn-primary" id="pickTodayBtn">🎲 帮我随机搭一套</button>
+      <p class="muted small">按当前季节从衣橱随机推荐，可一键记录今天穿了这些。</p>
+    </div>
+    <div class="stat-block">
+      <h3>穿着日历（${new Date().getFullYear()}年${new Date().getMonth() + 1}月）</h3>
+      <div class="cal-grid" id="calGrid"></div>
+      <p class="muted small">有记录的日期会高亮，点击查看当天穿了什么。</p>
+    </div>
     <div class="stat-cards">
       <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lab">衣物总数</div></div>
       <div class="stat-card"><div class="stat-num">${totalValue.toLocaleString()}</div><div class="stat-lab">总价值(¥)</div></div>
@@ -264,6 +457,11 @@ function renderStats() {
     <div class="stat-block"><h3>按季节分布</h3>${seasonBars}</div>
     <div class="stat-block"><h3>按分类分布</h3>${catBars}</div>
     <div class="stat-block"><h3>最常穿着</h3>${topHtml}</div>`;
+
+  const pt = $('#pickTodayBtn');
+  if (pt) pt.addEventListener('click', openPickToday);
+  const cg = $('#calGrid');
+  if (cg) renderWearCalendar(cg);
 }
 
 /* ===================== 渲染：我的 ===================== */
@@ -299,6 +497,11 @@ function renderMe() {
       <input type="file" id="importFile" accept="application/json" hidden>
     </div>
     <div class="me-section">
+      <h3>回收站</h3>
+      <button class="btn-ghost full" id="openTrashBtn">查看回收站（${state.trash.length}）</button>
+      <p class="muted small">删除的衣物会先进入回收站，可恢复或彻底删除，避免误删。</p>
+    </div>
+    <div class="me-section">
       <div class="status-row"><span>网络状态</span><span class="dot ${offline ? 'off' : 'on'}">${offline ? '离线可用' : '在线'}</span></div>
       <p class="muted small">所有数据保存在本机浏览器，离线也能用。换设备或换浏览器时，用“导出备份”再“导入备份”迁移数据。</p>
     </div>`;
@@ -309,6 +512,7 @@ function renderMe() {
   $('#exportBtn').addEventListener('click', exportData);
   $('#importBtn').addEventListener('click', () => $('#importFile').click());
   $('#importFile').addEventListener('change', importData);
+  $('#openTrashBtn').addEventListener('click', openTrashModal);
 }
 
 /* ===================== 弹窗系统 ===================== */
@@ -354,6 +558,15 @@ function openItemEditor(item, defaultCategory) {
     <label class="field"><span>尺码</span><select id="fSize">${sizeOptionsHtml(cat, it.size)}</select></label>
     <label class="field"><span>存储位置</span><input type="text" id="fLocation" list="locList" placeholder="如：主卧衣柜上层" value="${esc(it.location || '')}"></label>
     <datalist id="locList">${locOptionsHtml}</datalist>
+    <label class="field"><span>材质/面料</span><select id="fMaterial">${materialOptionsHtml(it.material)}</select></label>
+    <label class="field"><span>购买日期</span><input type="date" id="fBuyDate" value="${it.buyDate || ''}"></label>
+    <label class="field"><span>标签</span><input type="text" id="fTags" placeholder="通勤,运动,约会" value="${(it.tags || []).join(',')}"></label>
+    <label class="field"><span>状态</span><select id="fWash">
+      <option value="正常" ${(!it.washStatus || it.washStatus === '正常') ? 'selected' : ''}>正常</option>
+      <option value="待洗" ${it.washStatus === '待洗' ? 'selected' : ''}>待洗</option>
+      <option value="待熨" ${it.washStatus === '待熨' ? 'selected' : ''}>待熨</option>
+      <option value="待收纳" ${it.washStatus === '待收纳' ? 'selected' : ''}>待收纳</option>
+    </select></label>
     <div class="field"><span>季节（可多选）</span><div class="season-pick" id="seasonPick">
       ${SEASONS.map((s) => `<label class="spick"><input type="checkbox" value="${s.key}" ${(it.seasons || []).includes(s.key) ? 'checked' : ''}><span style="background:${s.color}">${s.label}</span></label>`).join('')}
     </div></div>
@@ -399,6 +612,10 @@ async function saveItem(original) {
     color: $('#fColor').value.trim(),
     size: $('#fSize').value,
     location: $('#fLocation').value.trim(),
+    material: $('#fMaterial').value,
+    buyDate: $('#fBuyDate').value || '',
+    tags: $('#fTags').value.split(',').map((s) => s.trim()).filter(Boolean),
+    washStatus: $('#fWash').value,
     seasons,
     brand: $('#fBrand').value.trim(),
     price: $('#fPrice').value ? Number($('#fPrice').value) : null,
@@ -415,18 +632,72 @@ async function saveItem(original) {
   toast('已保存');
 }
 
+function softDeleteItem(id) {
+  const it = state.items.find((x) => x.id === id);
+  if (!it) return;
+  it.deletedAt = Date.now();
+  return WardrobeDB.putItem(it);
+}
 function confirmDeleteItem(id) {
   openModal({
     title: '删除衣物',
-    body: '<p>确定删除这件衣物吗？此操作不可撤销。</p>',
+    body: '<p>确定删除这件衣物吗？它会先进入“回收站”，可在回收站恢复或彻底删除。</p>',
     foot: `<button class="btn-text" data-close>取消</button><button class="btn-primary danger" id="doDelete">删除</button>`,
   });
   $('#doDelete').addEventListener('click', async () => {
-    await WardrobeDB.deleteItem(id);
+    await softDeleteItem(id);
     await loadData();
     closeModal();
     renderCloset(); renderStats();
-    toast('已删除');
+    toast('已移入回收站');
+  });
+}
+
+/* 多选 / 批量删除（软删除 → 进回收站） */
+function toggleMultiSelect() {
+  state.multiSelect = !state.multiSelect;
+  if (!state.multiSelect) state.selectedIds.clear();
+  renderCloset();
+}
+async function batchDeleteSelected() {
+  if (state.selectedIds.size === 0) { toast('请先选择衣物'); return; }
+  const n = state.selectedIds.size;
+  for (const id of state.selectedIds) await softDeleteItem(id);
+  state.selectedIds.clear();
+  state.multiSelect = false;
+  await loadData();
+  renderCloset(); renderStats();
+  toast('已移入回收站 ' + n + ' 件');
+}
+
+/* 回收站：恢复 / 彻底删除 / 清空 */
+function openTrashModal() {
+  const body = `
+    <div class="trash-list">
+      ${state.trash.length ? state.trash.map((it) => `
+        <div class="trash-row">
+          <div class="trash-thumb">${it.image ? `<img src="${it.image}" alt="">` : '👕'}</div>
+          <div class="trash-info"><div>${esc(it.name || '未命名')}</div><div class="muted small">删除于 ${new Date(it.deletedAt).toLocaleDateString()}</div></div>
+          <div class="trash-actions">
+            <button class="btn-sm" data-restore="${it.id}">恢复</button>
+            <button class="btn-sm danger" data-purge="${it.id}">彻底删</button>
+          </div>
+        </div>`).join('') : '<p class="muted">回收站是空的</p>'}
+    </div>
+    ${state.trash.length ? `<button class="btn-ghost full danger" id="emptyTrashBtn" style="margin-top:12px">清空回收站</button>` : ''}`;
+  openModal({ title: '回收站（' + state.trash.length + '）', body });
+  $$('#modalRoot [data-restore]').forEach((b) => b.addEventListener('click', async () => {
+    const it = state.trash.find((x) => x.id === b.dataset.restore);
+    if (it) { delete it.deletedAt; await WardrobeDB.putItem(it); await loadData(); renderCloset(); renderStats(); renderMe(); openTrashModal(); }
+  }));
+  $$('#modalRoot [data-purge]').forEach((b) => b.addEventListener('click', async () => {
+    await WardrobeDB.deleteItem(b.dataset.purge);
+    await loadData(); renderCloset(); renderStats(); renderMe(); openTrashModal();
+  }));
+  const et = $('#emptyTrashBtn');
+  if (et) et.addEventListener('click', async () => {
+    for (const it of state.trash) await WardrobeDB.deleteItem(it.id);
+    await loadData(); renderCloset(); renderStats(); renderMe(); openTrashModal(); toast('已清空回收站');
   });
 }
 
@@ -715,6 +986,7 @@ function exportData() {
     accounts: state.accounts,
     items: state.items,
     outfits: state.outfits,
+    wearLog: state.wearLog,
     exportedAt: new Date().toISOString(),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -736,6 +1008,7 @@ async function importData(e) {
     if (data.accounts) for (const a of data.accounts) await WardrobeDB.putAccount(a);
     if (data.items) for (const it of data.items) await WardrobeDB.putItem(it);
     if (data.outfits) for (const o of data.outfits) await WardrobeDB.putOutfit(o);
+    if (data.wearLog) for (const w of data.wearLog) await WardrobeDB.putWearLog(w);
     state.accounts = await WardrobeDB.getAllAccounts();
     if (!state.accounts.find((a) => a.id === state.currentAccountId)) {
       state.currentAccountId = state.accounts[0].id;
@@ -812,11 +1085,22 @@ function bindEvents() {
     renderItemGrid();
   });
   $('#sortSelect').addEventListener('change', (e) => { state.sort = e.target.value; renderItemGrid(); });
-  $('#filterBtn').addEventListener('click', () => toast('筛选功能后续开放'));
-  $('#editGridBtn').addEventListener('click', () => toast('批量编辑功能后续开放'));
+  $('#filterBtn').addEventListener('click', openFilterModal);
+  $('#editGridBtn').addEventListener('click', toggleMultiSelect);
+  $('#batchDeleteSel').addEventListener('click', batchDeleteSelected);
+  $('#batchCancelSel').addEventListener('click', () => { state.multiSelect = false; state.selectedIds.clear(); renderCloset(); });
   $('#itemGrid').addEventListener('click', (e) => {
     const c = e.target.closest('.item-card');
-    if (c) { const it = state.items.find((x) => x.id === c.dataset.id); if (it) openItemEditor(it); }
+    if (!c) return;
+    if (state.multiSelect) {
+      const id = c.dataset.id;
+      if (state.selectedIds.has(id)) state.selectedIds.delete(id); else state.selectedIds.add(id);
+      renderItemGrid();
+      const bar = $('#batchBar');
+      if (bar) $('#batchCount').textContent = '已选 ' + state.selectedIds.size + ' 件';
+      return;
+    }
+    const it = state.items.find((x) => x.id === c.dataset.id); if (it) openItemEditor(it);
   });
   $('#outfitList').addEventListener('click', (e) => {
     const c = e.target.closest('.outfit-card');

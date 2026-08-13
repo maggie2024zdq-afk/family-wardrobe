@@ -1,7 +1,7 @@
 // db.js — 本地数据层（IndexedDB，无第三方依赖，纯离线）
 // 设计要点：以 accountId 隔离每个家庭成员的数据；IndexedDB 是“数据源真相”，离线即用。
 const DB_NAME = 'familyWardrobeDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const WardrobeDB = (() => {
   let db = null;
@@ -21,6 +21,10 @@ const WardrobeDB = (() => {
         }
         if (!d.objectStoreNames.contains('outfits')) {
           const s = d.createObjectStore('outfits', { keyPath: 'id' });
+          s.createIndex('accountId', 'accountId', { unique: false });
+        }
+        if (!d.objectStoreNames.contains('wearLog')) {
+          const s = d.createObjectStore('wearLog', { keyPath: 'id' });
           s.createIndex('accountId', 'accountId', { unique: false });
         }
       };
@@ -82,9 +86,28 @@ const WardrobeDB = (() => {
     });
   });
 
+  /* ---------- 穿戴日志（每天穿了什么） ---------- */
+  const addWearLog = (w) => open().then(() => p(store('wearLog', 'readwrite').add(w)));
+  const putWearLog = (w) => open().then(() => p(store('wearLog', 'readwrite').put(w)));
+  const deleteWearLog = (id) => open().then(() => p(store('wearLog', 'readwrite').delete(id)));
+  const getWearLogByAccount = (accountId) => open().then(() =>
+    p(store('wearLog').index('accountId').getAll(IDBKeyRange.only(accountId)))
+  );
+  const deleteWearLogByAccount = (accountId) => open().then(() => {
+    const idx = store('wearLog', 'readwrite').index('accountId');
+    return new Promise((resolve) => {
+      const req = idx.openCursor(IDBKeyRange.only(accountId));
+      req.onsuccess = (e) => {
+        const cur = e.target.result;
+        if (cur) { cur.delete(); cur.continue(); } else resolve();
+      };
+    });
+  });
+
   return {
     open, addAccount, putAccount, getAllAccounts, deleteAccount,
     addItem, putItem, deleteItem, getItem, getItemsByAccount, deleteItemsByAccount,
     addOutfit, putOutfit, deleteOutfit, getOutfitsByAccount, deleteOutfitsByAccount,
+    addWearLog, putWearLog, deleteWearLog, getWearLogByAccount, deleteWearLogByAccount,
   };
 })();
