@@ -10,7 +10,7 @@ const SUB_CATEGORIES = {
   '配饰': ['帽子', '围巾', '眼镜', '项链', '耳环', '手表', '腰带'],
 };
 const CAT_COLOR = {
-  '上装': '#E8B4B8', '下装': '#A8C5DA', '鞋子': '#B5D8C7', '包包': '#D4A373', '配饰': '#F2C078',
+  '上装': '#F2B8C6', '下装': '#A9CFE8', '鞋子': '#9FDCC0', '包包': '#E8CFA0', '配饰': '#C9B8E0',
 };
 const SEASONS = [
   { key: 'spring', label: '春', color: '#8BC48A' },
@@ -49,7 +49,120 @@ const SUB_ICON = {
   '单肩包': '👜', '双肩包': '🎒', '手提包': '👛', '斜挎包': '👜', '钱包': '👛', '手拿包': '👛',
   '帽子': '🎩', '围巾': '🧣', '眼镜': '👓', '项链': '💎', '耳环': '💎', '手表': '⌚', '腰带': '💫',
 };
-const ACCOUNT_COLORS = ['#4A90D9', '#E8B4B8', '#7EB5D6', '#B5D8C7', '#D4A373', '#F4A261'];
+const ACCOUNT_COLORS = ['#54BFA1', '#A9CFE8', '#E8B6C6', '#E8CFA0', '#C9B8E0', '#9FDCC0'];
+
+/* ===================== 每日励志语录 ===================== */
+// 正面向上的句子：名人名言 / 浪漫散文 / 励志短句，离线内置，每次打开随机显示
+const QUOTES = [
+  { t: '生活原本沉闷，但跑起来就有风。', a: '佚名', theme: 'nature' },
+  { t: '你只管努力，剩下的交给时间。', a: '佚名', theme: 'hope' },
+  { t: '星光不问赶路人，时光不负有心人。', a: '佚名', theme: 'star' },
+  { t: '每一个不曾起舞的日子，都是对生命的辜负。', a: '尼采', theme: 'star' },
+  { t: '不乱于心，不困于情，不畏将来，不念过往。', a: '丰子恺', theme: 'mountain' },
+  { t: '且将新火试新茶，诗酒趁年华。', a: '苏轼', theme: 'sun' },
+  { t: '纵有疾风起，人生不言弃。', a: '瓦雷里', theme: 'mountain' },
+  { t: '人间值得，未来可期。', a: '佚名', theme: 'flower' },
+  { t: '热爱可抵岁月漫长。', a: '佚名', theme: 'flower' },
+  { t: '所有的运气和惊喜，都来自你日复一日的认真与努力。', a: '佚名', theme: 'sun' },
+  { t: '心之所向，素履以往。', a: '佚名', theme: 'mountain' },
+  { t: '生活明朗，万物可爱。', a: '佚名', theme: 'sun' },
+  { t: '你所见的惊艳，都曾被平庸历练。', a: '佚名', theme: 'flower' },
+  { t: '慢慢来，谁还不是一边努力一边成长。', a: '佚名', theme: 'nature' },
+  { t: '心有繁星，沐光而行。', a: '佚名', theme: 'star' },
+  { t: '前路浩浩荡荡，万事尽可期待。', a: '佚名', theme: 'mountain' },
+  { t: '凡是过往，皆为序章。', a: '莎士比亚', theme: 'book' },
+  { t: '长风破浪会有时，直挂云帆济沧海。', a: '李白', theme: 'sea' },
+  { t: '路虽远，行则将至；事虽难，做则必成。', a: '《格言联璧》', theme: 'mountain' },
+  { t: '士不可以不弘毅，任重而道远。', a: '《论语》', theme: 'book' },
+  { t: '锲而不舍，金石可镂。', a: '荀子', theme: 'mountain' },
+  { t: '春风十里不如你。', a: '冯唐', theme: 'flower' },
+  { t: '你来人间一趟，你要看看太阳。', a: '海子', theme: 'sun' },
+  { t: '世界以痛吻我，要我报之以歌。', a: '泰戈尔', theme: 'flower' },
+  { t: '当你穿过了暴风雨，你早已不再是原来那个人。', a: '村上春树', theme: 'sea' },
+  { t: '保持热爱，奔赴山海。', a: '佚名', theme: 'sea' },
+  { t: '你若盛开，清风自来。', a: '佚名', theme: 'flower' },
+  { t: '万物皆有裂痕，那是光照进来的地方。', a: '莱昂纳德·科恩', theme: 'star' },
+  { t: '即使没有月亮，心中也是一片皎洁。', a: '佚名', theme: 'star' },
+  { t: '微笑着去唱生活的歌谣。', a: '佚名', theme: 'sun' },
+  { t: '愿有岁月可回首，且以深情共白头。', a: '佚名', theme: 'flower' },
+  { t: '努力的意义，是不想让未来的自己讨厌现在的自己。', a: '佚名', theme: 'hope' },
+  { t: '今天也是元气满满的一天！', a: '佚名', theme: 'sun' },
+  { t: '把日子过成诗，简单而精致。', a: '佚名', theme: 'book' },
+  { t: '温柔半两，从容一生。', a: '佚名', theme: 'flower' },
+  { t: '我们单枪匹马闯入这世间，只为活出属于自己的所有可能。', a: '佚名', theme: 'mountain' },
+  { t: '愿你出走半生，归来仍是少年。', a: '佚名', theme: 'star' },
+  { t: '与其互为人间，不如自成宇宙。', a: '佚名', theme: 'star' },
+  { t: '海阔凭鱼跃，天高任鸟飞。', a: '佚名', theme: 'sea' },
+  { t: '你要做一只鸟，飞往你的山。', a: '塔拉·韦斯特弗', theme: 'mountain' },
+  { t: '把每一个平凡的日子，过出欢喜。', a: '佚名', theme: 'flower' },
+  { t: '心若向阳，无畏悲伤。', a: '佚名', theme: 'sun' },
+  { t: '与其等待别人送花，不如自己种一座花园。', a: '佚名', theme: 'flower' },
+  { t: '走过的路，每一步都算数。', a: '佚名', theme: 'hope' },
+  { t: '别灰心，普普通通的我们，也值得被生活温柔以待。', a: '佚名', theme: 'flower' },
+  { t: '总有一束光，为你而亮。', a: '佚名', theme: 'star' },
+  { t: '山高水长，怕什么来不及。', a: '佚名', theme: 'mountain' },
+  { t: '把烦恼写在沙滩上，让海浪带走它。', a: '佚名', theme: 'sea' },
+  { t: '心存希冀，目有繁星。', a: '佚名', theme: 'star' },
+  { t: '万物生长，不负春光。', a: '佚名', theme: 'nature' },
+  { t: '愿你手中有书，眼里有光。', a: '佚名', theme: 'book' },
+  { t: '风很温柔，你也是。', a: '佚名', theme: 'nature' },
+  { t: '把日子调成自己喜欢的频道。', a: '佚名', theme: 'sun' },
+  { t: '那些打不倒你的，终将使你更强大。', a: '佚名', theme: 'mountain' },
+  { t: '认真生活的人，会被生活偏爱。', a: '佚名', theme: 'flower' },
+  { t: '只要还有期待，日子就有盼头。', a: '佚名', theme: 'hope' },
+  { t: '种一棵树最好的时间是十年前，其次是现在。', a: '佚名', theme: 'nature' },
+  { t: '你不必借光而行，你本身就是光。', a: '佚名', theme: 'star' },
+  { t: '生活的最佳状态，是冷冷清清地风风火火。', a: '佚名', theme: 'sun' },
+  { t: '在心里种花，人生才不会荒芜。', a: '佚名', theme: 'flower' },
+  { t: '理想是指路明灯。', a: '车尔尼雪夫斯基', theme: 'star' },
+  { t: '黑夜给了我黑色的眼睛，我却用它寻找光明。', a: '顾城', theme: 'star' },
+  { t: '沉舟侧畔千帆过，病树前头万木春。', a: '刘禹锡', theme: 'nature' },
+  { t: '会当凌绝顶，一览众山小。', a: '杜甫', theme: 'mountain' },
+  { t: '千磨万击还坚劲，任尔东西南北风。', a: '郑板桥', theme: 'mountain' },
+  { t: '宝剑锋从磨砺出，梅花香自苦寒来。', a: '佚名', theme: 'flower' },
+  { t: '业精于勤，荒于嬉。', a: '韩愈', theme: 'book' },
+  { t: '海纳百川，有容乃大。', a: '佚名', theme: 'sea' },
+  { t: '落霞与孤鹜齐飞，秋水共长天一色。', a: '王勃', theme: 'sea' },
+  { t: '采菊东篱下，悠然见南山。', a: '陶渊明', theme: 'mountain' },
+  { t: '静以修身，俭以养德。', a: '诸葛亮', theme: 'book' },
+  { t: '非淡泊无以明志，非宁静无以致远。', a: '诸葛亮', theme: 'book' },
+  { t: '不积跬步，无以至千里。', a: '荀子', theme: 'mountain' },
+  { t: '博观而约取，厚积而薄发。', a: '苏轼', theme: 'book' },
+  { t: '苔花如米小，也学牡丹开。', a: '袁枚', theme: 'flower' },
+  { t: '既然选择了远方，便只顾风雨兼程。', a: '汪国真', theme: 'mountain' },
+  { t: '人生若只如初见。', a: '纳兰性德', theme: 'flower' },
+  { t: '宠辱不惊，看庭前花开花落。', a: '佚名', theme: 'flower' },
+  { t: '闲看庭前花开花落，漫随天外云卷云舒。', a: '佚名', theme: 'nature' },
+  { t: '你若安好，便是晴天。', a: '佚名', theme: 'sun' },
+];
+// 与语录主题对应的小清新插画（程序化 SVG，离线内置，奶油白/薄荷绿/浅蓝配色）
+const THEME_ART = {
+  hope: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><circle cx="60" cy="56" r="22" fill="#F4C95D"/><g stroke="#F4C95D" stroke-width="3" stroke-linecap="round"><line x1="60" y1="20" x2="60" y2="29"/><line x1="24" y1="56" x2="33" y2="56"/><line x1="87" y1="56" x2="96" y2="56"/><line x1="36" y1="32" x2="41" y2="37"/><line x1="79" y1="32" x2="84" y2="37"/></g><path d="M14 86 Q60 70 106 86 L106 100 L14 100 Z" fill="#9FD8C4"/><path d="M14 92 Q60 80 106 92 L106 104 L14 104 Z" fill="#54BFA1"/></svg>`,
+  nature: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><path d="M60 102 L60 54" stroke="#54BFA1" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M60 70 C40 70 30 54 30 40 C50 40 62 54 60 70 Z" fill="#9FD8C4"/><path d="M60 62 C80 62 90 46 90 32 C70 32 58 46 60 62 Z" fill="#54BFA1"/><path d="M44 106 Q60 100 76 106" stroke="#8FD0BB" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  sea: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><circle cx="88" cy="40" r="14" fill="#F4C95D"/><path d="M8 70 Q30 56 52 70 T96 70 T140 70" stroke="#A9D7EC" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M8 84 Q30 70 52 84 T96 84 T140 84" stroke="#7FC4DE" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M8 98 Q30 84 52 98 T96 98 T140 98" stroke="#54BFA1" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`,
+  flower: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><path d="M60 106 L60 60" stroke="#54BFA1" stroke-width="4" stroke-linecap="round"/><path d="M60 78 C48 78 42 68 44 60" stroke="#9FD8C4" stroke-width="3" fill="none" stroke-linecap="round"/><g fill="#F4A6B8"><circle cx="60" cy="40" r="11"/><circle cx="44" cy="52" r="11"/><circle cx="76" cy="52" r="11"/><circle cx="50" cy="66" r="11"/><circle cx="70" cy="66" r="11"/></g><circle cx="60" cy="54" r="9" fill="#F4C95D"/></svg>`,
+  mountain: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><circle cx="88" cy="38" r="12" fill="#F4C95D"/><path d="M12 96 L46 50 L66 76 L84 44 L108 96 Z" fill="#9FD8C4"/><path d="M46 50 L56 64 L36 64 Z" fill="#FFFFFF" opacity=".9"/><path d="M84 44 L92 56 L76 56 Z" fill="#FFFFFF" opacity=".9"/><rect x="10" y="96" width="100" height="8" rx="4" fill="#54BFA1"/></svg>`,
+  star: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><path d="M78 26 a22 22 0 1 0 14 42 a16 16 0 1 1 -14 -42 Z" fill="#A9D7EC"/><g fill="#F4C95D"><path d="M40 28 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 z"/><path d="M28 58 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z"/><path d="M52 62 l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2 z"/></g></svg>`,
+  book: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><path d="M60 34 C44 26 26 28 14 34 L14 92 C26 86 44 84 60 92 Z" fill="#A9D7EC"/><path d="M60 34 C76 26 94 28 106 34 L106 92 C94 86 76 84 60 92 Z" fill="#9FD8C4"/><path d="M60 34 L60 92" stroke="#54BFA1" stroke-width="3"/><g stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity=".85"><line x1="22" y1="46" x2="50" y2="43"/><line x1="22" y1="56" x2="50" y2="53"/><line x1="22" y1="66" x2="50" y2="63"/><line x1="70" y1="43" x2="98" y2="46"/><line x1="70" y1="53" x2="98" y2="56"/><line x1="70" y1="63" x2="98" y2="66"/></g></svg>`,
+  sun: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><circle cx="60" cy="58" r="26" fill="#F4C95D"/><g stroke="#F4C95D" stroke-width="3.5" stroke-linecap="round"><line x1="60" y1="16" x2="60" y2="27"/><line x1="18" y1="58" x2="29" y2="58"/><line x1="91" y1="58" x2="102" y2="58"/><line x1="31" y1="29" x2="38" y2="36"/><line x1="82" y1="29" x2="89" y2="36"/><line x1="31" y1="87" x2="38" y2="80"/><line x1="82" y1="87" x2="89" y2="80"/></g><circle cx="51" cy="54" r="3" fill="#7A5A1E"/><circle cx="69" cy="54" r="3" fill="#7A5A1E"/><path d="M50 64 Q60 72 70 64" stroke="#7A5A1E" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+};
+
+let _lastQuoteIdx = -1;
+function renderQuote() {
+  const box = $('#quoteCard');
+  if (!box || QUOTES.length === 0) return;
+  let i = Math.floor(Math.random() * QUOTES.length);
+  if (QUOTES.length > 1 && i === _lastQuoteIdx) i = (i + 1) % QUOTES.length;
+  _lastQuoteIdx = i;
+  const q = QUOTES[i];
+  const art = THEME_ART[q.theme] || THEME_ART.hope;
+  box.innerHTML = `<button class="quote-refresh" id="quoteRefresh" title="换一句">🔄</button>`
+    + `<div class="quote-text"><span class="quote-mark">“</span>${esc(q.t)}</div>`
+    + `<span class="quote-author">— ${esc(q.a)}</span>`
+    + `<div class="quote-art">${art}</div>`;
+  const rf = $('#quoteRefresh');
+  if (rf) rf.addEventListener('click', renderQuote);
+}
 
 /* ===================== 状态 ===================== */
 const state = {
@@ -276,6 +389,7 @@ function openFilterModal() {
 /* ===================== 渲染：首页 ===================== */
 function renderHome() {
   renderWeather();
+  renderQuote();
 }
 const WMO_DESC = {
   0: '晴', 1: '大致晴朗', 2: '局部多云', 3: '阴',
@@ -295,30 +409,71 @@ function weatherTip(temp) {
   if (temp >= 0) return '寒冷，羽绒/厚外套+保暖内搭';
   return '严寒，厚羽绒+围巾帽子全副武装';
 }
+const loadWeatherCity = () => {
+  try { return JSON.parse(localStorage.getItem('wardrobe_weather_city') || 'null'); } catch (e) { return null; }
+};
+async function geocodeCity(name) {
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&language=zh&count=1`);
+    const d = await r.json();
+    if (d && d.results && d.results.length) {
+      const g = d.results[0];
+      const extra = [g.admin1 && g.admin1 !== g.name ? g.admin1 : '', g.country && g.country !== '中国' ? g.country : ''].filter(Boolean).join('·');
+      return { label: g.name + (extra ? '·' + extra : ''), latitude: g.latitude, longitude: g.longitude };
+    }
+  } catch (e) {}
+  return null;
+}
+function editWeatherCity() {
+  openModal({
+    title: '设置默认城市',
+    body: '<p class="muted small">输入你所在的城市，天气将默认显示该城市（如：上海、广州、成都）。留空则继续使用手机定位。</p>'
+      + '<label class="field"><span>城市</span><input type="text" id="wxCityInput" placeholder="如：上海"></label>',
+    foot: '<button class="btn-text" data-close>取消</button><button class="btn-primary" id="wxCityOk">确定</button>',
+  });
+  setTimeout(() => { const i = $('#wxCityInput'); if (i) i.focus(); }, 60);
+  $('#wxCityOk').addEventListener('click', async () => {
+    const name = $('#wxCityInput').value.trim();
+    if (!name) { try { localStorage.removeItem('wardrobe_weather_city'); } catch (e) {} closeModal(); renderWeather(); toast('已恢复使用手机定位'); return; }
+    const geo = await geocodeCity(name);
+    if (!geo) { toast('未找到该城市，请检查名称'); return; }
+    try { localStorage.setItem('wardrobe_weather_city', JSON.stringify(geo)); } catch (e) {}
+    closeModal();
+    renderWeather();
+    toast('已默认显示：' + geo.label);
+  });
+}
 function renderWeather() {
   const box = $('#weatherCard');
   if (!box) return;
+  if (!navigator.onLine) { box.innerHTML = '<p class="muted small">📡 天气需联网查看</p>'; return; }
+  const attachCityEdit = () => { const e = $('#wxCityEdit'); if (e) e.onclick = editWeatherCity; };
   const show = (temp, code, city) => {
     const t = Math.round(temp);
-    box.innerHTML = `<div class="wx-main"><div class="wx-temp">${t}°</div><div class="wx-desc">${weatherDesc(code)}</div><div class="wx-city">${esc(city)}</div></div><div class="wx-tip">👕 ${weatherTip(t)}</div>`;
+    box.innerHTML = `<div class="wx-main"><div class="wx-temp">${t}°</div><div class="wx-desc">${weatherDesc(code)}</div><div class="wx-city" id="wxCityEdit" title="点击修改城市">${esc(city)} ✎</div></div><div class="wx-tip">👕 ${weatherTip(t)}</div>`;
+    attachCityEdit();
+  };
+  const fetchByCoord = async (lat, lon, cityName) => {
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`);
+      const d = await r.json();
+      if (d && d.current) show(d.current.temperature_2m, d.current.weather_code, cityName);
+      else fallback();
+    } catch (e) { fallback(); }
   };
   const fallback = () => {
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=39.9042&longitude=116.4074&current=temperature_2m,weather_code')
-      .then((r) => r.json())
-      .then((d) => show(d.current.temperature_2m, d.current.weather_code, '北京（默认）'))
-      .catch(() => { box.innerHTML = '<p class="muted small">天气获取失败，可稍后重试</p>'; });
+    const saved = loadWeatherCity();
+    fetchByCoord(39.9042, 116.4074, saved ? saved.label : '北京（点击设置城市）');
   };
+  const saved = loadWeatherCity();
+  if (saved) { fetchByCoord(saved.latitude, saved.longitude, saved.label); return; }
   if (!navigator.geolocation) { fallback(); return; }
   let done = false;
   const geoTimer = setTimeout(() => { if (!done) { done = true; fallback(); } }, 9000);
   navigator.geolocation.getCurrentPosition(async (pos) => {
     if (done) return; done = true; clearTimeout(geoTimer);
-    try {
-      const { latitude, longitude } = pos.coords;
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`);
-      const d = await r.json();
-      show(d.current.temperature_2m, d.current.weather_code, '当前位置');
-    } catch (e) { fallback(); }
+    const { latitude, longitude } = pos.coords;
+    fetchByCoord(latitude, longitude, '当前位置');
   }, () => { if (!done) { done = true; clearTimeout(geoTimer); fallback(); } }, { timeout: 9000 });
 }
 
@@ -430,7 +585,7 @@ function renderStats() {
 
   const catBars = state.categories.filter((c) => byCat[c] > 0).map((c) => `
     <div class="bar-row"><span class="bar-label">${c}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${total ? Math.round(byCat[c] / total * 100) : 0}%;background:${CAT_COLOR[c] || '#4A90D9'}"></div></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${total ? Math.round(byCat[c] / total * 100) : 0}%;background:${CAT_COLOR[c] || '#54BFA1'}"></div></div>
       <span class="bar-val">${byCat[c]}</span></div>`).join('') || '<p class="muted">暂无数据</p>';
 
   const top = [...items].sort((a, b) => (b.wornCount || 0) - (a.wornCount || 0)).slice(0, 5);
@@ -470,7 +625,7 @@ function renderMe() {
   const offline = !navigator.onLine;
   $('#meContent').innerHTML = `
     <div class="me-card">
-      <span class="avatar lg" style="background:${a ? a.color : '#4A90D9'}">${esc((a ? a.name : '家')[0])}</span>
+      <span class="avatar lg" style="background:${a ? a.color : '#54BFA1'}">${esc((a ? a.name : '家')[0])}</span>
       <div style="flex:1">
         <div class="me-name">${esc(a ? a.name : '')}</div>
         <div class="me-sub">当前账号 · ${state.items.length} 件衣物</div>
