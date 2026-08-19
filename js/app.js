@@ -345,7 +345,7 @@ function renderItemGrid() {
         <div class="item-thumb">${it.image ? `<img src="${it.image}" alt="${esc(it.name)}">` : `<span class="no-img">👕</span>`}</div>
         <div class="item-meta">
           <div class="item-name">${esc(it.name || '未命名')}</div>
-          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}${it.material ? (' · ' + esc(it.material)) : ''}${it.washStatus && it.washStatus !== '正常' ? (' · 🧺' + esc(it.washStatus)) : ''}${(it.tags && it.tags.length) ? (' · 🏷' + esc(it.tags.join('/'))) : ''}${it.buyDate ? (' · 衣龄' + (new Date().getFullYear() - new Date(it.buyDate).getFullYear()) + '年') : ''}${it.expireDate ? (' · ⏳' + esc(it.expireDate) + (expireState(it.expireDate) === 'expired' ? ' <span class="exp-warn">⚠️已过期</span>' : expireState(it.expireDate) === 'soon' ? ' <span class="exp-soon">⏰1个月内到期</span>' : ' 到期')) : ''}</div>
+          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}${it.material ? (' · ' + esc(it.material)) : ''}${it.washStatus && it.washStatus !== '正常' ? (' · 🧺' + esc(it.washStatus)) : ''}${(it.tags && it.tags.length) ? (' · 🏷' + esc(it.tags.join('/'))) : ''}${it.qty && Number(it.qty) > 1 ? (' · 🔢数量×' + it.qty) : ''}${it.buyDate ? (' · 衣龄' + (new Date().getFullYear() - new Date(it.buyDate).getFullYear()) + '年') : ''}${it.expireDate ? (' · ⏳' + esc(it.expireDate) + (expireState(it.expireDate) === 'expired' ? ' <span class="exp-warn">⚠️已过期</span>' : expireState(it.expireDate) === 'soon' ? ' <span class="exp-soon">⏰1个月内到期</span>' : ' 到期')) : ''}</div>
           <div class="item-seasons">${(it.seasons || []).map((s) => `<span class="sbadge" style="background:${SEASON_COLOR[s]}">${SEASON_LABEL[s]}</span>`).join('')}</div>
         </div>
       </div>`).join('');
@@ -412,6 +412,33 @@ function openFilterModal() {
 function renderHome() {
   renderWeather();
   renderQuote();
+  renderExpireAlert();
+}
+function renderExpireAlert() {
+  const box = $('#expireAlert');
+  if (!box) return;
+  const expired = state.items.filter((it) => it.expireDate && expireState(it.expireDate) === 'expired');
+  const soon = state.items.filter((it) => it.expireDate && expireState(it.expireDate) === 'soon');
+  if (!expired.length && !soon.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  const parts = [];
+  if (expired.length) parts.push(`<span class="ea-chip ea-red">🔴 ${expired.length} 件已过期</span>`);
+  if (soon.length) parts.push(`<span class="ea-chip ea-orange">🟠 ${soon.length} 件即将到期</span>`);
+  box.innerHTML = parts.join('') + '<span class="ea-go">查看 ›</span>';
+  box.onclick = openExpireList;
+}
+function openExpireList() {
+  const expired = state.items.filter((it) => it.expireDate && expireState(it.expireDate) === 'expired');
+  const soon = state.items.filter((it) => it.expireDate && expireState(it.expireDate) === 'soon');
+  let body = '';
+  if (expired.length) {
+    body += '<p class="ea-grp ea-red">🔴 已过期</p>' + expired.map((it) => `<div class="exp-row"><span>${esc(it.name || '未命名')}</span><span class="exp-warn">${esc(it.expireDate)} ⚠️</span></div>`).join('');
+  }
+  if (soon.length) {
+    body += '<p class="ea-grp ea-orange">🟠 30天内到期</p>' + soon.map((it) => `<div class="exp-row"><span>${esc(it.name || '未命名')}</span><span class="exp-soon">${esc(it.expireDate)} ⏰</span></div>`).join('');
+  }
+  if (!body) body = '<p class="muted">暂无临期物品</p>';
+  openModal({ title: '临期提醒', body, foot: '<button class="btn-primary" data-close>知道了</button>' });
 }
 const WMO_DESC = {
   0: '晴', 1: '大致晴朗', 2: '局部多云', 3: '阴',
@@ -768,6 +795,7 @@ function openItemEditor(item, defaultCategory) {
     <div class="field"><span>季节（可多选）</span><div class="season-pick" id="seasonPick">
       ${SEASONS.map((s) => `<label class="spick"><input type="checkbox" value="${s.key}" ${(it.seasons || []).includes(s.key) ? 'checked' : ''}><span style="background:${s.color}">${s.label}</span></label>`).join('')}
     </div></div>
+    <label class="field"><span>数量</span><input type="number" id="fQty" min="1" step="1" value="${it.qty && it.qty > 1 ? it.qty : 1}"></label>
     <label class="field"><span>品牌</span><input type="text" id="fBrand" value="${esc(it.brand || '')}"></label>
     <label class="field"><span>价格 (¥)</span><input type="number" id="fPrice" value="${it.price != null ? it.price : ''}"></label>
     <label class="field"><span>备注</span><textarea id="fNote" rows="2">${esc(it.note || '')}</textarea></label>
@@ -820,6 +848,7 @@ async function saveItem(original) {
     brand: $('#fBrand').value.trim(),
     price: $('#fPrice').value ? Number($('#fPrice').value) : null,
     note: $('#fNote').value.trim(),
+    qty: Number($('#fQty').value) || 1,
     image: state._img,
     wornCount: original ? (Number($('#fWorn').value) || 0) : 0,
     createdAt: original ? original.createdAt : Date.now(),
