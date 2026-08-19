@@ -345,7 +345,7 @@ function renderItemGrid() {
         <div class="item-thumb">${it.image ? `<img src="${it.image}" alt="${esc(it.name)}">` : `<span class="no-img">👕</span>`}</div>
         <div class="item-meta">
           <div class="item-name">${esc(it.name || '未命名')}</div>
-          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}${it.material ? (' · ' + esc(it.material)) : ''}${it.washStatus && it.washStatus !== '正常' ? (' · 🧺' + esc(it.washStatus)) : ''}${(it.tags && it.tags.length) ? (' · 🏷' + esc(it.tags.join('/'))) : ''}${it.buyDate ? (' · 衣龄' + (new Date().getFullYear() - new Date(it.buyDate).getFullYear()) + '年') : ''}${it.expireDate ? (' · ⏳' + esc(it.expireDate) + (it.expireDate < todayStr() ? ' <span class="exp-warn">⚠️已过期</span>' : ' 到期')) : ''}</div>
+          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}${it.material ? (' · ' + esc(it.material)) : ''}${it.washStatus && it.washStatus !== '正常' ? (' · 🧺' + esc(it.washStatus)) : ''}${(it.tags && it.tags.length) ? (' · 🏷' + esc(it.tags.join('/'))) : ''}${it.buyDate ? (' · 衣龄' + (new Date().getFullYear() - new Date(it.buyDate).getFullYear()) + '年') : ''}${it.expireDate ? (' · ⏳' + esc(it.expireDate) + (expireState(it.expireDate) === 'expired' ? ' <span class="exp-warn">⚠️已过期</span>' : expireState(it.expireDate) === 'soon' ? ' <span class="exp-soon">⏰1个月内到期</span>' : ' 到期')) : ''}</div>
           <div class="item-seasons">${(it.seasons || []).map((s) => `<span class="sbadge" style="background:${SEASON_COLOR[s]}">${SEASON_LABEL[s]}</span>`).join('')}</div>
         </div>
       </div>`).join('');
@@ -724,6 +724,16 @@ function subSuggestionsHtml(category) {
 function todayStr() {
   const t = new Date();
   return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+}
+// 保质期状态：expired=已过期 / soon=30天内临期 / ok=正常
+function expireState(expStr) {
+  if (!expStr) return 'none';
+  const today = new Date(todayStr());
+  const exp = new Date(expStr);
+  if (isNaN(exp)) return 'none';
+  if (exp < today) return 'expired';
+  if ((exp - today) <= 30 * 86400000) return 'soon';
+  return 'ok';
 }
 
 /* ===================== 衣物：添加/编辑 ===================== */

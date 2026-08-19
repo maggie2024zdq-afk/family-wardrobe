@@ -92,6 +92,7 @@ body{
 .item-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .item-sub{font-size:12px;color:var(--muted);margin-top:2px;}
 .exp-warn{color:#E57373;font-weight:600;}
+.exp-soon{color:#E0913A;font-weight:600;}
 .item-seasons{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;}
 .sbadge{color:#fff;font-size:11px;padding:1px 7px;border-radius:999px;}
 
