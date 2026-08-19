@@ -1,7 +1,7 @@
 // sw.js — 离线缓存
 // 策略：cache-first（缓存优先）+ 后台静默更新。
 // 有本地缓存时直接返回，离线/换网也能秒开；联网时在后台把最新资源写入缓存，下次打开即新版。
-const CACHE = 'wardrobe-v8';
+const CACHE = 'wardrobe-v10';
 const ASSETS = [
   './',
   './index.html',

@@ -1,16 +1,18 @@
 'use strict';
 
 /* ===================== 常量 ===================== */
-const CATEGORIES = ['上装', '下装', '鞋子', '包包', '配饰'];
+const CATEGORIES = ['上装', '下装', '鞋子', '包包', '配饰', '其它'];
 const SUB_CATEGORIES = {
   '上装': ['T恤', '卫衣', '衬衫', '毛衣', '夹克', '大衣', '羽绒服'],
   '下装': ['牛仔裤', '休闲裤', '运动裤', '短裤', '半身裙', '连衣裙'],
   '鞋子': ['运动鞋', '休闲鞋', '皮鞋', '靴子', '凉鞋', '拖鞋'],
   '包包': ['单肩包', '双肩包', '手提包', '斜挎包', '钱包', '手拿包'],
   '配饰': ['帽子', '围巾', '眼镜', '项链', '耳环', '手表', '腰带'],
+  // 「其它」为自由分类：二级分类由用户自行填写（见 subSuggestionsHtml，预设+已用历史）
+  '其它': [],
 };
 const CAT_COLOR = {
-  '上装': '#F2B8C6', '下装': '#A9CFE8', '鞋子': '#9FDCC0', '包包': '#E8CFA0', '配饰': '#C9B8E0',
+  '上装': '#F2B8C6', '下装': '#A9CFE8', '鞋子': '#9FDCC0', '包包': '#E8CFA0', '配饰': '#C9B8E0', '其它': '#A8D8D0',
 };
 const SEASONS = [
   { key: 'spring', label: '春', color: '#8BC48A' },
@@ -20,13 +22,14 @@ const SEASONS = [
 ];
 const SEASON_LABEL = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
 const SEASON_COLOR = { spring: '#8BC48A', summer: '#F4A261', autumn: '#D4A373', winter: '#7EB5D6' };
-// 尺码按一级分类智能切换（鞋子显示鞋码、上装/下装显示服装码、包包/配饰显示通用规格）
+// 尺码按一级分类智能切换（鞋子显示常规鞋码、上装/下装显示服装码、包包/配饰/洗护显示通用规格）
 const SIZE_OPTIONS = {
-  '鞋子': ['不填', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'],
+  '鞋子': ['不填', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'],
   '上装': ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
   '下装': ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
   '包包': ['不填', '均码', '小号', '中号', '大号'],
   '配饰': ['不填', '均码', '可调节'],
+  '其它': ['不填', '小瓶', '中瓶', '大瓶', '补充装', '旅行装', '替换装'],
 };
 const SIZE_FALLBACK = ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const sizeOptionsFor = (cat) => SIZE_OPTIONS[cat] || SIZE_FALLBACK;
@@ -41,13 +44,14 @@ const locOptionsHtml = LOCATION_LIST.map((l) => `<option value="${l}"></option>`
 // 材质/面料预设
 const MATERIAL_LIST = ['棉', '麻', '真丝', '羊毛', '涤纶', '混纺', '牛仔', '针织', '其他'];
 const materialOptionsHtml = (sel) => ['<option value="">不填</option>'].concat(MATERIAL_LIST.map((m) => `<option value="${m}" ${sel === m ? 'selected' : ''}>${m}</option>`)).join('');
-const CAT_ICON = { '全部': '📋', '上装': '👕', '下装': '👖', '鞋子': '👟', '包包': '👜', '配饰': '🕶️' };
+const CAT_ICON = { '全部': '📋', '上装': '👕', '下装': '👖', '鞋子': '👟', '包包': '👜', '配饰': '🕶️', '其它': '🧴' };
 const SUB_ICON = {
   'T恤': '👕', '卫衣': '🧥', '衬衫': '👔', '毛衣': '🧶', '夹克': '🧥', '大衣': '🧥', '羽绒服': '🧥',
   '牛仔裤': '👖', '休闲裤': '👖', '运动裤': '🩳', '短裤': '🩳', '半身裙': '👗', '连衣裙': '👗',
   '运动鞋': '👟', '休闲鞋': '👞', '皮鞋': '👞', '靴子': '🥾', '凉鞋': '👡', '拖鞋': '🩴',
   '单肩包': '👜', '双肩包': '🎒', '手提包': '👛', '斜挎包': '👜', '钱包': '👛', '手拿包': '👛',
   '帽子': '🎩', '围巾': '🧣', '眼镜': '👓', '项链': '💎', '耳环': '💎', '手表': '⌚', '腰带': '💫',
+  '洗衣液': '🧴', '洗衣凝珠': '🫧', '柔顺剂': '🧴', '衣物消毒液': '🧼', '去渍笔': '🧽', '鞋油/鞋刷': '🥿', '留香珠': '🫧', '收纳工具': '🧺',
 };
 const ACCOUNT_COLORS = ['#54BFA1', '#A9CFE8', '#E8B6C6', '#E8CFA0', '#C9B8E0', '#9FDCC0'];
 
@@ -234,11 +238,26 @@ async function loadData() {
   state.trash = all.filter((it) => it.deletedAt).sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
   state.outfits = (await WardrobeDB.getOutfitsByAccount(state.currentAccountId)) || [];
   state.wearLog = (await WardrobeDB.getWearLogByAccount(state.currentAccountId)) || [];
+  // 迁移：旧分类名「洗护用品」→「其它」（改名后旧数据不丢失）
+  const OLD_CAT = '洗护用品', NEW_CAT = '其它';
+  const needMig = [...state.items, ...state.trash].filter((it) => it.category === OLD_CAT);
+  if (needMig.length) {
+    needMig.forEach((it) => { it.category = NEW_CAT; });
+    for (const it of needMig) await WardrobeDB.putItem(it);
+  }
+  if (state.accounts && state.accounts.length) {
+    for (const a of state.accounts) {
+      if (a.categories && a.categories.includes(OLD_CAT)) {
+        a.categories = a.categories.map((c) => (c === OLD_CAT ? NEW_CAT : c));
+        await WardrobeDB.putAccount(a);
+      }
+    }
+  }
   const acc = currentAccount();
-  const base = acc && acc.categories && acc.categories.length ? acc.categories : [...CATEGORIES];
-  // 把旧数据里实际存在的分类也纳入侧边栏，避免丢失
+  // 始终并入全局默认分类（新增分类对老账号也可见），再加上账号自定义分类与历史数据里实际存在的分类
+  const accCats = (acc && acc.categories && acc.categories.length) ? acc.categories : [];
   const extras = state.items.map((it) => it.category).filter(Boolean);
-  state.categories = [...new Set([...base, ...extras])];
+  state.categories = [...new Set([...CATEGORIES, ...accCats, ...extras])];
 }
 
 /* ===================== 渲染：衣橱 / 单品 ===================== */
@@ -293,18 +312,21 @@ function renderSubTags() {
     wrap.innerHTML = '';
     return;
   }
-  const subs = SUB_CATEGORIES[state.categoryFilter] || [];
-  if (subs.length === 0) {
+  const cat = state.categoryFilter;
+  const preset = SUB_CATEGORIES[cat] || [];
+  const used = [...new Set(state.items.filter((it) => it.category === cat && it.subCategory).map((it) => it.subCategory))];
+  const all = [...new Set([...preset, ...used])];
+  if (all.length === 0) {
     wrap.innerHTML = '';
     return;
   }
   const counts = {};
   state.items.forEach((it) => {
-    if (it.category !== state.categoryFilter) return;
+    if (it.category !== cat) return;
     if (state.seasonFilter !== 'all' && !(it.seasons || []).includes(state.seasonFilter)) return;
-    counts[it.subCategory] = (counts[it.subCategory] || 0) + 1;
+    if (it.subCategory) counts[it.subCategory] = (counts[it.subCategory] || 0) + 1;
   });
-  wrap.innerHTML = [{ label: '全部', key: 'all' }].concat(subs.map((s) => ({ label: s, key: s }))).map((o) =>
+  wrap.innerHTML = [{ label: '全部', key: 'all' }].concat(all.map((s) => ({ label: s, key: s }))).map((o) =>
     `<button class="sub-tag ${state.subCategoryFilter === o.key ? 'active' : ''}" data-sub="${o.key}">${o.key !== 'all' ? `<span class="sub-ico">${SUB_ICON[o.label] || ''}</span>` : ''}${esc(o.label)}${o.key !== 'all' ? `<span class="t-count">${counts[o.label] || 0}</span>` : ''}</button>`
   ).join('');
 }
@@ -323,7 +345,7 @@ function renderItemGrid() {
         <div class="item-thumb">${it.image ? `<img src="${it.image}" alt="${esc(it.name)}">` : `<span class="no-img">👕</span>`}</div>
         <div class="item-meta">
           <div class="item-name">${esc(it.name || '未命名')}</div>
-          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}${it.material ? (' · ' + esc(it.material)) : ''}${it.washStatus && it.washStatus !== '正常' ? (' · 🧺' + esc(it.washStatus)) : ''}${(it.tags && it.tags.length) ? (' · 🏷' + esc(it.tags.join('/'))) : ''}${it.buyDate ? (' · 衣龄' + (new Date().getFullYear() - new Date(it.buyDate).getFullYear()) + '年') : ''}</div>
+          <div class="item-sub">${esc([it.category, it.subCategory].filter(Boolean).join(' · '))}${it.color ? (' · ' + esc(it.color)) : ''}${it.size && it.size !== '不填' ? (' · ' + esc(it.size)) : ''}${it.location ? (' · 📍' + esc(it.location)) : ''}${it.material ? (' · ' + esc(it.material)) : ''}${it.washStatus && it.washStatus !== '正常' ? (' · 🧺' + esc(it.washStatus)) : ''}${(it.tags && it.tags.length) ? (' · 🏷' + esc(it.tags.join('/'))) : ''}${it.buyDate ? (' · 衣龄' + (new Date().getFullYear() - new Date(it.buyDate).getFullYear()) + '年') : ''}${it.expireDate ? (' · ⏳' + esc(it.expireDate) + (it.expireDate < todayStr() ? ' <span class="exp-warn">⚠️已过期</span>' : ' 到期')) : ''}</div>
           <div class="item-seasons">${(it.seasons || []).map((s) => `<span class="sbadge" style="background:${SEASON_COLOR[s]}">${SEASON_LABEL[s]}</span>`).join('')}</div>
         </div>
       </div>`).join('');
@@ -693,6 +715,16 @@ function subCategoryOptions(category, selected) {
   if (subs.length === 0) return '<option value="">-</option>';
   return subs.map((s) => `<option value="${s}" ${selected === s ? 'selected' : ''}>${s}</option>`).join('');
 }
+// 二级分类建议：预设 + 该分类下已用过的自由文本（用户可自行添加新二级分类）
+function subSuggestionsHtml(category) {
+  const preset = SUB_CATEGORIES[category] || [];
+  const used = [...new Set((state.items || []).filter((it) => it.category === category && it.subCategory).map((it) => it.subCategory))];
+  return [...new Set([...preset, ...used])].map((s) => `<option value="${esc(s)}"></option>`).join('');
+}
+function todayStr() {
+  const t = new Date();
+  return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+}
 
 /* ===================== 衣物：添加/编辑 ===================== */
 function openItemEditor(item, defaultCategory) {
@@ -708,13 +740,14 @@ function openItemEditor(item, defaultCategory) {
     </label>
     <label class="field"><span>名称 *</span><input type="text" id="fName" placeholder="如：白色棉衬衫" value="${esc(it.name || '')}"></label>
     <label class="field"><span>一级分类</span><select id="fCategory">${state.categories.map((c) => `<option value="${c}" ${cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
-    <label class="field"><span>二级分类</span><select id="fSubCategory">${subCategoryOptions(cat, it.subCategory)}</select></label>
+    <label class="field"><span>二级分类</span><input type="text" id="fSubCategory" list="subList" placeholder="可自由填写，如：洗衣液 / 工具" value="${esc(it.subCategory || '')}"><datalist id="subList">${subSuggestionsHtml(cat)}</datalist></label>
     <label class="field"><span>颜色</span><input type="text" id="fColor" placeholder="如：白色" value="${esc(it.color || '')}"></label>
     <label class="field"><span>尺码</span><select id="fSize">${sizeOptionsHtml(cat, it.size)}</select></label>
     <label class="field"><span>存储位置</span><input type="text" id="fLocation" list="locList" placeholder="如：主卧衣柜上层" value="${esc(it.location || '')}"></label>
     <datalist id="locList">${locOptionsHtml}</datalist>
     <label class="field"><span>材质/面料</span><select id="fMaterial">${materialOptionsHtml(it.material)}</select></label>
     <label class="field"><span>购买日期</span><input type="date" id="fBuyDate" value="${it.buyDate || ''}"></label>
+    <label class="field"><span>保质期</span><input type="date" id="fExpire" value="${it.expireDate || ''}"></label>
     <label class="field"><span>标签</span><input type="text" id="fTags" placeholder="通勤,运动,约会" value="${(it.tags || []).join(',')}"></label>
     <label class="field"><span>状态</span><select id="fWash">
       <option value="正常" ${(!it.washStatus || it.washStatus === '正常') ? 'selected' : ''}>正常</option>
@@ -746,9 +779,10 @@ function openItemEditor(item, defaultCategory) {
     } catch (err) { toast('图片读取失败'); }
   });
   $('#fCategory').addEventListener('change', (e) => {
-    $('#fSubCategory').innerHTML = subCategoryOptions(e.target.value, '');
+    const nc = e.target.value;
+    $('#subList').innerHTML = subSuggestionsHtml(nc);
     const cur = $('#fSize').value;
-    $('#fSize').innerHTML = sizeOptionsHtml(e.target.value, sizeOptionsFor(e.target.value).includes(cur) ? cur : '不填');
+    $('#fSize').innerHTML = sizeOptionsHtml(nc, sizeOptionsFor(nc).includes(cur) ? cur : '不填');
   });
   if (item) $('#deleteItemBtn').addEventListener('click', () => confirmDeleteItem(item.id));
   $('#saveItemBtn').addEventListener('click', () => saveItem(item));
@@ -769,6 +803,7 @@ async function saveItem(original) {
     location: $('#fLocation').value.trim(),
     material: $('#fMaterial').value,
     buyDate: $('#fBuyDate').value || '',
+    expireDate: $('#fExpire').value || '',
     tags: $('#fTags').value.split(',').map((s) => s.trim()).filter(Boolean),
     washStatus: $('#fWash').value,
     seasons,
@@ -960,7 +995,7 @@ async function openBatchImportModal() {
     </label>
     <div class="batch-default">
       <label class="field"><span>默认分类</span><select id="batchCat">${state.categories.map((c) => `<option value="${c}">${c}</option>`).join('')}</select></label>
-      <label class="field"><span>默认二级分类</span><select id="batchSubCat"><option value="">不设置</option></select></label>
+      <label class="field"><span>默认二级分类</span><input type="text" id="batchSubCat" list="batchSubList" placeholder="可自由填写"></label><datalist id="batchSubList"></datalist>
       <label class="field"><span>默认尺码</span><select id="batchSize">${sizeOptionsHtml(state.categories[0] || '上装', '不填')}</select></label>
       <label class="field"><span>默认存储位置</span><input type="text" id="batchLoc" list="batchLocList" placeholder="如：主卧衣柜"></label>
       <datalist id="batchLocList">${locOptionsHtml}</datalist>
@@ -976,7 +1011,7 @@ async function openBatchImportModal() {
   const grid = $('#batchGrid');
   function updateBatchSubCat() {
     const cat = $('#batchCat').value;
-    $('#batchSubCat').innerHTML = '<option value="">不设置</option>' + subCategoryOptions(cat, '');
+    $('#batchSubList').innerHTML = subSuggestionsHtml(cat);
   }
   updateBatchSubCat();
   $('#batchCat').addEventListener('change', () => {
@@ -989,10 +1024,7 @@ async function openBatchImportModal() {
     $$('#batchGrid select[data-field="cat"]').forEach((sel) => {
       sel.innerHTML = state.categories.map((c) => `<option value="${c}" ${sel.value === c ? 'selected' : ''}>${c}</option>`).join('');
     });
-    $$('#batchGrid select[data-field="sub"]').forEach((sel) => {
-      const rowCat = sel.closest('.batch-card').querySelector('select[data-field="cat"]').value;
-      sel.innerHTML = '<option value="">-</option>' + subCategoryOptions(rowCat, sel.value);
-    });
+    $('#batchSubList').innerHTML = subSuggestionsHtml($('#batchCat').value);
   });
   function renderGrid() {
     const summary = $('#batchSummary');
@@ -1002,21 +1034,20 @@ async function openBatchImportModal() {
       <div class="batch-card" data-i="${i}">
         <div class="batch-thumb"><img src="${b.dataUrl}" alt=""></div>
         <select data-i="${i}" data-field="cat">${state.categories.map((c) => `<option value="${c}" ${b.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
-        <select data-i="${i}" data-field="sub"><option value="">二级分类</option>${subCategoryOptions(b.category, b.subCategory)}</select>
+        <input type="text" data-i="${i}" data-field="sub" list="batchSubList" placeholder="二级分类" value="${esc(b.subCategory || '')}">
         <select data-i="${i}" data-field="size">${sizeOptionsHtml(b.category, b.size)}</select>
         <input type="text" data-i="${i}" data-field="location" list="batchLocList" placeholder="位置" value="${esc(b.location || '')}">
       </div>`).join('');
     $$('#batchGrid select[data-field="cat"]').forEach((sel) => sel.addEventListener('change', (e) => {
       const idx = Number(e.target.dataset.i);
       state._batch[idx].category = e.target.value;
-      const subSel = e.target.parentElement.querySelector('select[data-field="sub"]');
-      subSel.innerHTML = '<option value="">二级分类</option>' + subCategoryOptions(e.target.value, '');
       state._batch[idx].subCategory = '';
       const sizeSel = e.target.parentElement.querySelector('select[data-field="size"]');
       if (sizeSel) { sizeSel.innerHTML = sizeOptionsHtml(e.target.value, '不填'); state._batch[idx].size = '不填'; }
+      $('#batchSubList').innerHTML = subSuggestionsHtml(e.target.value);
     }));
-    $$('#batchGrid select[data-field="sub"]').forEach((sel) => sel.addEventListener('change', (e) => {
-      state._batch[Number(e.target.dataset.i)].subCategory = e.target.value;
+    $$('#batchGrid input[data-field="sub"]').forEach((inp) => inp.addEventListener('input', (e) => {
+      state._batch[Number(e.target.dataset.i)].subCategory = e.target.value.trim();
     }));
     $$('#batchGrid select[data-field="size"]').forEach((sel) => sel.addEventListener('change', (e) => {
       state._batch[Number(e.target.dataset.i)].size = e.target.value;
