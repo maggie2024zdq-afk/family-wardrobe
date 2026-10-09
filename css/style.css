@@ -99,6 +99,14 @@ body{
 .ea-red{color:#E57373;}
 .ea-orange{color:#E0913A;}
 .ea-go{margin-left:auto;font-size:13px;color:var(--muted);}
+/* 经期提醒卡片 */
+.period-card{margin:0 16px 4px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#fff;display:flex;flex-direction:column;gap:6px;}
+.period-card.tone-red{background:linear-gradient(135deg,#FFE9EC,#FFD9DF);border-color:#F4B8C2;}
+.period-card.tone-orange{background:linear-gradient(135deg,#FFF1E0,#FFE2C2);border-color:#F4C98A;}
+.period-card.tone-blue{background:linear-gradient(135deg,#E6F2F9,#D6EBF5);border-color:#A9D7EC;}
+.period-card.tone-normal{background:linear-gradient(135deg,#E9F5F0,#D8F0E6);border-color:#9FDCC0;}
+.pc-title{font-size:15px;font-weight:600;color:#3A3A3A;}
+.pc-tip{font-size:13px;color:var(--muted);line-height:1.5;}
 .ea-grp{font-size:13px;font-weight:600;margin:10px 0 6px;}
 .ea-grp.ea-red{color:#E57373;}
 .ea-grp.ea-orange{color:#E0913A;}
@@ -184,6 +192,14 @@ body{
 .spick span{width:40px;height:40px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;opacity:.45;transition:.15s;}
 .spick input:checked + span{opacity:1;box-shadow:0 0 0 3px rgba(0,0,0,.08);}
 
+/* 添加成员：性别选择 */
+.add-gender{border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;background:var(--card);outline:none;}
+/* 经期设置 */
+.menstrual-box{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#FCFBF7;}
+.mens-row{display:flex;gap:10px;}
+.mens-row .field{flex:1;margin-bottom:10px;}
+.field.sm>span{font-size:12px;}
+.mens-next{margin-top:8px;font-size:13px;font-weight:600;color:var(--primary);}
 /* 账号列表 */
 .account-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
 .account-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;}

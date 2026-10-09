@@ -1,18 +1,29 @@
 'use strict';
 
 /* ===================== 常量 ===================== */
+// 基础分类（男女通用）
 const CATEGORIES = ['上装', '下装', '鞋子', '包包', '配饰', '其它'];
+// 女性专属分类（在基础分类之上追加）
+const FEMALE_EXTRA_CATEGORIES = ['内衣', '裙装'];
+// 按性别取默认分类：女性 = 基础 + 内衣 + 裙装；男性/未设置 = 基础
+function defaultCategoriesForGender(gender) {
+  return gender === 'female' ? [...CATEGORIES, ...FEMALE_EXTRA_CATEGORIES] : [...CATEGORIES];
+}
 const SUB_CATEGORIES = {
   '上装': ['T恤', '卫衣', '衬衫', '毛衣', '夹克', '大衣', '羽绒服'],
-  '下装': ['牛仔裤', '休闲裤', '运动裤', '短裤', '半身裙', '连衣裙'],
+  '下装': ['牛仔裤', '休闲裤', '运动裤', '短裤'],
   '鞋子': ['运动鞋', '休闲鞋', '皮鞋', '靴子', '凉鞋', '拖鞋'],
   '包包': ['单肩包', '双肩包', '手提包', '斜挎包', '钱包', '手拿包'],
   '配饰': ['帽子', '围巾', '眼镜', '项链', '耳环', '手表', '腰带'],
+  // 女性专属：内衣（含文胸/bra）、裙装
+  '内衣': ['文胸', '无痕内裤', '运动内衣', '睡衣', '家居服', '保暖内衣', '塑身衣', '袜子'],
+  '裙装': ['连衣裙', '半身裙', '吊带裙', '长裙', '短裙', 'A字裙'],
   // 「其它」为自由分类：二级分类由用户自行填写（见 subSuggestionsHtml，预设+已用历史）
   '其它': [],
 };
 const CAT_COLOR = {
   '上装': '#F2B8C6', '下装': '#A9CFE8', '鞋子': '#9FDCC0', '包包': '#E8CFA0', '配饰': '#C9B8E0', '其它': '#A8D8D0',
+  '内衣': '#E3A9C0', '裙装': '#D8B4E2',
 };
 const SEASONS = [
   { key: 'spring', label: '春', color: '#8BC48A' },
@@ -29,6 +40,8 @@ const SIZE_OPTIONS = {
   '下装': ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
   '包包': ['不填', '均码', '小号', '中号', '大号'],
   '配饰': ['不填', '均码', '可调节'],
+  '内衣': ['不填', '均码', 'S', 'M', 'L', 'XL', 'XXL'],
+  '裙装': ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL'],
   '其它': ['不填', '小瓶', '中瓶', '大瓶', '补充装', '旅行装', '替换装'],
 };
 const SIZE_FALLBACK = ['不填', '均码', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
@@ -44,7 +57,7 @@ const locOptionsHtml = LOCATION_LIST.map((l) => `<option value="${l}"></option>`
 // 材质/面料预设
 const MATERIAL_LIST = ['棉', '麻', '真丝', '羊毛', '涤纶', '混纺', '牛仔', '针织', '其他'];
 const materialOptionsHtml = (sel) => ['<option value="">不填</option>'].concat(MATERIAL_LIST.map((m) => `<option value="${m}" ${sel === m ? 'selected' : ''}>${m}</option>`)).join('');
-const CAT_ICON = { '全部': '📋', '上装': '👕', '下装': '👖', '鞋子': '👟', '包包': '👜', '配饰': '🕶️', '其它': '🧴' };
+const CAT_ICON = { '全部': '📋', '上装': '👕', '下装': '👖', '鞋子': '👟', '包包': '👜', '配饰': '🕶️', '其它': '🧴', '内衣': '👙', '裙装': '👗' };
 const SUB_ICON = {
   'T恤': '👕', '卫衣': '🧥', '衬衫': '👔', '毛衣': '🧶', '夹克': '🧥', '大衣': '🧥', '羽绒服': '🧥',
   '牛仔裤': '👖', '休闲裤': '👖', '运动裤': '🩳', '短裤': '🩳', '半身裙': '👗', '连衣裙': '👗',
@@ -52,6 +65,8 @@ const SUB_ICON = {
   '单肩包': '👜', '双肩包': '🎒', '手提包': '👛', '斜挎包': '👜', '钱包': '👛', '手拿包': '👛',
   '帽子': '🎩', '围巾': '🧣', '眼镜': '👓', '项链': '💎', '耳环': '💎', '手表': '⌚', '腰带': '💫',
   '洗衣液': '🧴', '洗衣凝珠': '🫧', '柔顺剂': '🧴', '衣物消毒液': '🧼', '去渍笔': '🧽', '鞋油/鞋刷': '🥿', '留香珠': '🫧', '收纳工具': '🧺',
+  '文胸': '👙', '无痕内裤': '🩲', '运动内衣': '🩱', '睡衣': '🌙', '家居服': '🏠', '保暖内衣': '🔥', '塑身衣': '✨', '袜子': '🧦',
+  '连衣裙': '👗', '半身裙': '👗', '吊带裙': '👚', '长裙': '👗', '短裙': '👗', 'A字裙': '👗',
 };
 const ACCOUNT_COLORS = ['#54BFA1', '#A9CFE8', '#E8B6C6', '#E8CFA0', '#C9B8E0', '#9FDCC0'];
 
@@ -247,10 +262,17 @@ async function loadData() {
   }
   if (state.accounts && state.accounts.length) {
     for (const a of state.accounts) {
+      let changed = false;
       if (a.categories && a.categories.includes(OLD_CAT)) {
         a.categories = a.categories.map((c) => (c === OLD_CAT ? NEW_CAT : c));
-        await WardrobeDB.putAccount(a);
+        changed = true;
       }
+      // 女性账号确保含专属分类（内衣/裙装）
+      if (a.gender === 'female' && a.categories) {
+        const miss = FEMALE_EXTRA_CATEGORIES.filter((c) => !a.categories.includes(c));
+        if (miss.length) { a.categories = [...a.categories, ...miss]; changed = true; }
+      }
+      if (changed) await WardrobeDB.putAccount(a);
     }
   }
   const acc = currentAccount();
@@ -413,6 +435,7 @@ function renderHome() {
   renderWeather();
   renderQuote();
   renderExpireAlert();
+  renderPeriodCard();
 }
 function renderExpireAlert() {
   const box = $('#expireAlert');
@@ -439,6 +462,82 @@ function openExpireList() {
   }
   if (!body) body = '<p class="muted">暂无临期物品</p>';
   openModal({ title: '临期提醒', body, foot: '<button class="btn-primary" data-close>知道了</button>' });
+}
+
+/* ===================== 经期周期 ===================== */
+function fmtCNDate(d) {
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+// 经期设置面板（女性账号在「我的」页展示）
+function menstrualSettingsHtml(acc) {
+  const m = acc.menstrual || { cycleLen: 28, periodLen: 5, lastStart: '' };
+  const info = menstrualInfo(acc);
+  return `
+    <div class="menstrual-box">
+      <p class="me-sub">经期周期（仅本人可见，离线保存）</p>
+      <div class="mens-row">
+        <label class="field sm"><span>周期(天)</span><input type="number" id="mCycle" min="15" max="60" value="${m.cycleLen || 28}"></label>
+        <label class="field sm"><span>经期(天)</span><input type="number" id="mPeriod" min="1" max="15" value="${m.periodLen || 5}"></label>
+      </div>
+      <label class="field"><span>上次经期开始</span><input type="date" id="mLast" value="${m.lastStart || ''}"></label>
+      <button class="btn-primary full" id="saveMensBtn">保存经期设置</button>
+      ${info && info.nextText ? `<p class="mens-next">🩸 预测下次经期：${info.nextText}</p>` : '<p class="muted small">填好「上次经期开始」后，首页会自动提醒下次经期与贴心建议。</p>'}
+    </div>`;
+}
+// 推算当前阶段与建议
+function menstrualInfo(acc) {
+  const m = acc && acc.menstrual;
+  if (!m || !m.lastStart) return null;
+  const cycleLen = Number(m.cycleLen) || 28;
+  const periodLen = Number(m.periodLen) || 5;
+  const last = new Date(m.lastStart + 'T00:00:00');
+  if (isNaN(last)) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  // 找到最近一次 <= 今天的经期开始
+  let start = new Date(last);
+  while (true) {
+    const next = new Date(start); next.setDate(next.getDate() + cycleLen);
+    if (next <= today) start = next; else break;
+  }
+  const dayInCycle = Math.round((today - start) / 86400000);
+  const nextStart = new Date(start); nextStart.setDate(nextStart.getDate() + cycleLen);
+  const daysUntilNext = Math.round((nextStart - today) / 86400000);
+  const ovulation = new Date(start); ovulation.setDate(ovulation.getDate() + (cycleLen - 14));
+  const daysToOvulation = Math.round((ovulation - today) / 86400000);
+  let phase, title, tip, tone;
+  if (dayInCycle < periodLen) {
+    phase = 'period';
+    title = `🩸 经期进行中 · 第 ${dayInCycle + 1} 天`;
+    tip = '注意休息，避免剧烈运动与生冷饮食，多喝温水、保持腹部温暖。';
+    tone = 'red';
+  } else if (daysUntilNext <= 5) {
+    phase = 'pre';
+    title = `🩸 距下次经期约 ${daysUntilNext} 天`;
+    tip = '经期临近，建议提前备好卫生用品与保暖衣物，避免贪凉，保持规律作息。';
+    tone = 'orange';
+  } else if (daysToOvulation >= -2 && daysToOvulation <= 4) {
+    phase = 'ovulation';
+    title = daysToOvulation >= 0 ? `🌸 排卵期约 ${daysToOvulation} 天后` : '🌸 排卵期进行中';
+    tip = '排卵期前后身体易波动，注意营养均衡、适度运动，记录身体变化更安心。';
+    tone = 'blue';
+  } else {
+    phase = 'normal';
+    title = `🩸 距下次经期约 ${daysUntilNext} 天`;
+    tip = '距经期尚早，保持规律作息与均衡饮食，状态稳稳的。';
+    tone = 'normal';
+  }
+  return { phase, title, tip, tone, daysUntilNext, nextText: fmtCNDate(nextStart) };
+}
+// 首页经期提醒卡片（仅女性账号、且已设置过经期）
+function renderPeriodCard() {
+  const box = $('#periodCard');
+  if (!box) return;
+  const acc = currentAccount();
+  const info = acc && acc.gender === 'female' ? menstrualInfo(acc) : null;
+  if (!info) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.className = 'period-card tone-' + info.tone;
+  box.innerHTML = `<div class="pc-main"><span class="pc-title">${info.title}</span></div><div class="pc-tip">💡 ${info.tip}</div>`;
 }
 const WMO_DESC = {
   0: '晴', 1: '大致晴朗', 2: '局部多云', 3: '阴',
@@ -671,15 +770,27 @@ function renderStats() {
 /* ===================== 渲染：我的 ===================== */
 function renderMe() {
   const a = currentAccount();
+  const g = (a && a.gender) || '';
   const offline = !navigator.onLine;
   $('#meContent').innerHTML = `
     <div class="me-card">
       <span class="avatar lg" style="background:${a ? a.color : '#54BFA1'}">${esc((a ? a.name : '家')[0])}</span>
       <div style="flex:1">
         <div class="me-name">${esc(a ? a.name : '')}</div>
-        <div class="me-sub">当前账号 · ${state.items.length} 件衣物</div>
+        <div class="me-sub">${g === 'female' ? '女' : g === 'male' ? '男' : '未设性别'} · 当前账号 · ${state.items.length} 件衣物</div>
       </div>
       <button class="btn-ghost" id="switchAccountBtn">切换</button>
+    </div>
+    <div class="me-section">
+      <h3>账号资料</h3>
+      <label class="field"><span>性别</span>
+        <select id="genderSel">
+          <option value="" ${g === '' ? 'selected' : ''}>未设置</option>
+          <option value="female" ${g === 'female' ? 'selected' : ''}>女</option>
+          <option value="male" ${g === 'male' ? 'selected' : ''}>男</option>
+        </select>
+      </label>
+      ${g === 'female' ? menstrualSettingsHtml(a) : '<p class="muted small">设为「女」后，可在这里设置经期周期提醒。</p>'}
     </div>
     <div class="me-section">
       <h3>家庭成员</h3>
@@ -717,6 +828,35 @@ function renderMe() {
   $('#importBtn').addEventListener('click', () => $('#importFile').click());
   $('#importFile').addEventListener('change', importData);
   $('#openTrashBtn').addEventListener('click', openTrashModal);
+  // 性别设置：切换后自动补加女性专属分类
+  const gs = $('#genderSel');
+  if (gs) gs.addEventListener('change', async () => {
+    const acc = currentAccount(); if (!acc) return;
+    acc.gender = gs.value;
+    if (acc.gender === 'female') {
+      const miss = FEMALE_EXTRA_CATEGORIES.filter((c) => !acc.categories.includes(c));
+      if (miss.length) { acc.categories = [...acc.categories, ...miss]; await WardrobeDB.putAccount(acc); state.accounts = await WardrobeDB.getAllAccounts(); await loadData(); renderCloset(); toast('已添加女性专属分类：' + miss.join('、')); }
+      else { await WardrobeDB.putAccount(acc); state.accounts = await WardrobeDB.getAllAccounts(); }
+    } else {
+      await WardrobeDB.putAccount(acc); state.accounts = await WardrobeDB.getAllAccounts();
+    }
+    renderMe();
+  });
+  // 经期设置保存
+  const sm = $('#saveMensBtn');
+  if (sm) sm.addEventListener('click', async () => {
+    const acc = currentAccount(); if (!acc) return;
+    acc.menstrual = {
+      cycleLen: Number($('#mCycle').value) || 28,
+      periodLen: Number($('#mPeriod').value) || 5,
+      lastStart: $('#mLast').value || '',
+    };
+    await WardrobeDB.putAccount(acc);
+    state.accounts = await WardrobeDB.getAllAccounts();
+    renderMe();
+    renderHome();
+    toast('经期设置已保存');
+  });
 }
 
 /* ===================== 弹窗系统 ===================== */
@@ -931,11 +1071,13 @@ function openTrashModal() {
 }
 
 /* ===================== 账号：切换 / 管理 ===================== */
-async function createAccount(name) {
+async function createAccount(name, gender) {
   const acc = {
     id: uid(), name,
+    gender: gender || '',
     color: ACCOUNT_COLORS[state.accounts.length % ACCOUNT_COLORS.length],
-    categories: [...CATEGORIES],
+    categories: defaultCategoriesForGender(gender),
+    menstrual: { cycleLen: 28, periodLen: 5, lastStart: '' },
     createdAt: Date.now(),
   };
   await WardrobeDB.addAccount(acc);
@@ -955,14 +1097,21 @@ function openAccountModal() {
     </div>
     <div class="add-account">
       <input type="text" id="newAccountName" placeholder="新成员名称，如：妈妈 / 小明">
+      <select id="newAccountGender" class="add-gender">
+        <option value="">性别（可选）</option>
+        <option value="female">女</option>
+        <option value="male">男</option>
+      </select>
       <button class="btn-primary" id="addAccountBtn">添加</button>
-    </div>`;
+    </div>
+    <p class="muted small">设为「女」会自动带上内衣、裙装等专属分类。</p>`;
   openModal({ title: '切换 / 管理账号', body });
   $$('#modalRoot [data-switch]').forEach((b) => b.addEventListener('click', () => switchAccount(b.dataset.switch)));
   $('#addAccountBtn').addEventListener('click', async () => {
     const name = $('#newAccountName').value.trim();
     if (!name) { toast('请输入名称'); return; }
-    await createAccount(name);
+    const gender = $('#newAccountGender').value;
+    await createAccount(name, gender);
     state.accounts = await WardrobeDB.getAllAccounts();
     openAccountModal();
   });
