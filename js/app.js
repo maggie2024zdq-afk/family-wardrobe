@@ -1093,6 +1093,7 @@ function openAccountModal() {
           <div class="account-info"><div class="account-rname">${esc(a.name)}</div>
             <div class="account-rsub">${a.id === state.currentAccountId ? '当前账号' : '点击切换'}</div></div>
           <button class="btn-sm" data-switch="${a.id}" ${a.id === state.currentAccountId ? 'disabled' : ''}>${a.id === state.currentAccountId ? '使用中' : '切换'}</button>
+          <button class="del-btn" data-del="${a.id}" title="删除成员" aria-label="删除成员">🗑</button>
         </div>`).join('')}
     </div>
     <div class="add-account">
@@ -1107,6 +1108,7 @@ function openAccountModal() {
     <p class="muted small">设为「女」会自动带上内衣、裙装等专属分类。</p>`;
   openModal({ title: '切换 / 管理账号', body });
   $$('#modalRoot [data-switch]').forEach((b) => b.addEventListener('click', () => switchAccount(b.dataset.switch)));
+  $$('#modalRoot [data-del]').forEach((b) => b.addEventListener('click', () => confirmDeleteAccount(b.dataset.del)));
   $('#addAccountBtn').addEventListener('click', async () => {
     const name = $('#newAccountName').value.trim();
     if (!name) { toast('请输入名称'); return; }
@@ -1115,6 +1117,44 @@ function openAccountModal() {
     state.accounts = await WardrobeDB.getAllAccounts();
     openAccountModal();
   });
+}
+
+function confirmDeleteAccount(id) {
+  const acc = state.accounts.find((a) => a.id === id);
+  if (!acc) return;
+  if (state.accounts.length <= 1) { toast('至少保留一个成员'); return; }
+  const isCur = id === state.currentAccountId;
+  const body = `
+    <p>确定删除成员 <b>${esc(acc.name)}</b> 吗？${isCur ? '<br><span class="muted small">（当前正在使用，删除后会自动切换到其他成员）</span>' : ''}</p>
+    <p class="muted small">该成员名下的全部衣物、搭配、穿戴记录都会一并删除，且不可恢复。</p>`;
+  openModal({
+    title: '删除成员',
+    body,
+    foot: `<button class="btn-text" data-close>取消</button><button class="btn-primary danger" id="delAccConfirm">删除</button>`,
+  });
+  $('#delAccConfirm').addEventListener('click', () => deleteAccountById(id));
+}
+
+async function deleteAccountById(id) {
+  const acc = state.accounts.find((a) => a.id === id);
+  if (!acc) return;
+  // 先清该成员的全部数据，再删账号（底层已支持按 accountId 批量删除）
+  await WardrobeDB.deleteItemsByAccount(id);
+  await WardrobeDB.deleteOutfitsByAccount(id);
+  await WardrobeDB.deleteWearLogByAccount(id);
+  await WardrobeDB.deleteAccount(id);
+  state.accounts = await WardrobeDB.getAllAccounts();
+  // 若删的是当前账号，自动切到剩余第一个
+  if (state.currentAccountId === id && state.accounts.length) {
+    const next = state.accounts[0];
+    state.currentAccountId = next.id;
+    localStorage.setItem('fw_currentAccount', next.id);
+    await loadData();
+    renderAll();
+  }
+  closeModal();
+  openAccountModal();
+  toast('已删除成员：' + acc.name);
 }
 
 async function switchAccount(id) {
